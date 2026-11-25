@@ -12,7 +12,7 @@ tags:
   - releases
   - version-pr
 status: draft
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T17:54:10Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T18:25:43Z }
 ---
 
 # Which token opens the version PR
@@ -28,8 +28,7 @@ generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T17:54:10Z }
   - Each repo turns on "Allow GitHub Actions to create and approve pull requests" in its Actions settings.
 - **A GitHub App token is a later, separate decision.**
   - The kit's `version-or-release` action takes its token as a `github-token` input, so it can take an App token later without a breaking change (#5).
-- **The owner holds off signing this record off** until that decision is made, so it stays `status: draft`.
-  - `okf-verify` sets `draft` to `stable` when it signs a record off, so it is left out of `pnpm okf:verify --yes <paths>` and skipped at `--changed`'s prompt until then.
+- **Choosing an App token edits this record** in the same PR, which sends it back to `status: draft` for the owner to sign off again.
 
 ## Why
 

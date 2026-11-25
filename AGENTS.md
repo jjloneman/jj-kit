@@ -182,6 +182,8 @@
     - a change to a package's `dependencies`, `optionalDependencies`, `peerDependencies` or `engines`, a `catalog:` entry they point to included;
     - a dev dependency or root bump ships nothing, so it passes without one.
     - When one is needed, it must bump a package, not be empty; the owner adds `pnpm changeset` to the Renovate branch.
+    - **The script needs bash 5** (`inherit_errexit`) and `yq` v4, both on GitHub's Ubuntu runners.
+      - macOS's built-in bash 3.2 can't run it; to test it locally, `brew install bash yq`.
 - `release.yml` runs on every push to `main`, and by hand from "Run workflow" (see below).
 - **Every action is pinned to an exact `vX.Y.Z`.**
 - **Every job declares its own `permissions`**, under a top-level `permissions: {}`.
@@ -219,6 +221,8 @@
 - **Empty changesets never release.**
   - `release.yml` skips the version PR while every pending changeset is empty.
   - The next real one's version PR deletes them all.
+  - A run on `main` with only empty changesets pending logs "All changesets are empty. Not creating PR" and ends green; that's success, not a failure.
+    - It never logs "No unpublished projects to publish", since it never reaches the publish step.
 - **`release.yml` keeps a rolling `chore(release): 🚀 version packages` PR open** while changesets are pending, labeled `🚀 release` and assigned to `jjloneman`.
   - Its CI run is started by `github-actions[bot]`, so it waits for approval.
   - Approve it on the PR before merging, since `main` requires every check.
@@ -250,13 +254,18 @@
   - Date-stamp facts that can drift ("as of 2026-11-25").
 - **An agent writes a record as `status: draft`** and records itself in `generated`, as `<producer>/<version>` (`claude-code/<model-id>`).
   - It never adds a `verified` entry on its own.
+- **Never make up a date or time** in a record: `generated.at`, an "as of" date, anything.
+  - Read it from `date -u +%Y-%m-%dT%H:%M:%SZ` right before writing it.
+  - A `generated.at` ahead of the clock can't be signed off, since okf-tools refuses one later than `verified.at`.
 - **An agent verifies only when the owner asks**, with `pnpm okf:verify --yes <paths>`.
   - Name the files rather than passing `--changed`, unless the owner asked for every changed record.
+  - **It commits the stamp itself**, such as `docs(decisions): 📝 verify 1 decision record`, and never pushes; push it after.
+    - Pass `--no-commit` to leave the edit uncommitted instead.
 - **Check a record's `verified` before changing the behavior it describes:**
   - any `verified` entry means someone signed it off (usually `human:jjloneman`, the owner), so change the behavior only with the owner's agreement;
   - no `verified` means it is an unreviewed draft.
 - **Either way, update the record in the same PR as the change.**
-  - Re-stamp `generated` (`by` and `at`), so a signed-off record shows as changed until it is verified again.
+  - Re-stamp `generated` (`by` and `at`, the time read from `date -u`), so a signed-off record shows as changed until it is verified again.
 
 ## 🛑 Deleting things
 

@@ -13,6 +13,9 @@
 #
 # - Any error fails the script rather than printing `ships=false`, so a broken
 #   check never skips the changeset.
+#
+# - It needs bash 5 for `inherit_errexit`, and yq v4; macOS's built-in bash 3.2
+#   can't run it, so test it locally after `brew install bash yq`.
 
 set -euo pipefail
 shopt -s inherit_errexit

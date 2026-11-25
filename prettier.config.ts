@@ -2,6 +2,9 @@
  * Copied from okf-tools until the kit ships its own Prettier config.
  *
  * - #7 replaces this file with `@jjloneman/kit-prettier-config`.
+ *
+ * - The Markdown override below is jj-kit's own, not okf-tools', so #7 must
+ *   keep it (see docs/decisions/markdown-wrap.md).
  */
 import type { Config } from "prettier";
 
@@ -29,6 +32,28 @@ const CONFIG: Config = {
     {
       files: ["*.jsonc", "tsconfig.json"],
       options: { trailingComma: "none" },
+    },
+
+    /*
+     * Wrap Markdown at `printWidth`, so files read well side by side in
+     * GitHub and VS Code.
+     *
+     * - Scoped to Markdown files because `proseWrap` also rewraps YAML's
+     *   folded scalars, such as a workflow's `run: >-` commands.
+     *
+     * - A record's frontmatter is YAML inside the Markdown, so its
+     *   `description` wraps too.
+     *
+     * - Changesets are left alone, since a wrapped summary would reach
+     *   `CHANGELOG.md` as several lines; `.changeset/README.md` still wraps.
+     *
+     * - `files` has a slash so `excludeFiles` matches the whole path; with a
+     *   bare `*.md`, Prettier matches the exclusion by basename too.
+     */
+    {
+      excludeFiles: ".changeset/!(README).md",
+      files: "**/*.md",
+      options: { proseWrap: "always" },
     },
   ],
   plugins: ["prettier-plugin-sh"],

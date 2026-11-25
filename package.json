@@ -1,21 +1,47 @@
 {
-  "name": "jj-kit",
-  "private": true,
-  "description": "🧰 My shared repo kit: lint, format, TypeScript, release and CI configs every repo inherits",
-  "homepage": "https://github.com/jjloneman/jj-kit#readme",
-  "bugs": {
-    "url": "https://github.com/jjloneman/jj-kit/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/jjloneman/jj-kit.git"
-  },
-  "license": "MIT",
   "author": {
     "name": "JJ Loneman",
     "url": "https://github.com/jjloneman"
   },
-  "type": "module",
+  "bugs": {
+    "url": "https://github.com/jjloneman/jj-kit/issues"
+  },
+  "description": "🧰 My shared repo kit: lint, format, TypeScript, release and CI configs every repo inherits",
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-jsonc": "3.4.2",
+    "eslint-plugin-perfectionist": "5.14.0",
+    "eslint-plugin-tsdoc": "0.5.4",
+    "eslint-plugin-yml": "3.10.0",
+    "jiti": "2.7.0",
+    "prettier": "catalog:",
+    "prettier-plugin-sh": "0.20.2",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
+    "vitest": "catalog:"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "onFail": "error",
+      "version": ">=26"
+    }
+  },
+  "engines": {
+    "node": ">=26"
+  },
+  "homepage": "https://github.com/jjloneman/jj-kit#readme",
+  "license": "MIT",
+  "name": "jj-kit",
+  "packageManager": "pnpm@12.22.0",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jjloneman/jj-kit.git"
+  },
   "scripts": {
     "build": "pnpm -r --if-present build",
     "check": "pnpm lint:fix && pnpm format && pnpm typecheck && pnpm test:coverage && pnpm lint:package",
@@ -29,32 +55,5 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc && pnpm -r --if-present typecheck"
   },
-  "devDependencies": {
-    "@eslint/js": "10.0.1",
-    "@types/node": "catalog:",
-    "@vitest/coverage-v8": "catalog:",
-    "eslint": "catalog:",
-    "eslint-plugin-jsonc": "3.4.2",
-    "eslint-plugin-perfectionist": "5.14.0",
-    "eslint-plugin-tsdoc": "0.5.4",
-    "eslint-plugin-yml": "3.10.0",
-    "jiti": "2.7.0",
-    "prettier": "catalog:",
-    "prettier-plugin-packagejson": "3.1.0",
-    "prettier-plugin-sh": "0.20.2",
-    "typescript": "catalog:",
-    "typescript-eslint": "catalog:",
-    "vitest": "catalog:"
-  },
-  "packageManager": "pnpm@12.22.0",
-  "engines": {
-    "node": ">=26"
-  },
-  "devEngines": {
-    "runtime": {
-      "name": "node",
-      "onFail": "error",
-      "version": ">=26"
-    }
-  }
+  "type": "module"
 }

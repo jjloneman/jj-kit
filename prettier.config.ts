@@ -31,7 +31,7 @@ const CONFIG: Config = {
       options: { trailingComma: "none" },
     },
   ],
-  plugins: ["prettier-plugin-packagejson", "prettier-plugin-sh"],
+  plugins: ["prettier-plugin-sh"],
   trailingComma: "es5",
 };
 

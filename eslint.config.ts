@@ -211,10 +211,11 @@ const CONFIG: Linter.Config[] = defineConfig(
   },
 
   /*
-   * JSON keys stay alphabetized, like object keys in TypeScript.
+   * JSON keys stay alphabetized at every level, like object keys in
+   * TypeScript.
    *
-   * - `package.json` is excluded: it keeps the conventional `sort-package-json`
-   *   order, which `prettier-plugin-packagejson` enforces instead.
+   * - `package.json` included: npm and pnpm read its fields by name, so their
+   *   order carries no meaning.
    *
    * - `tsconfig.json` and VS Code's `.vscode/*.json` are JSONC — their tools
    *   read comments in them — so they get the JSONC preset, which allows them.
@@ -222,7 +223,7 @@ const CONFIG: Linter.Config[] = defineConfig(
   {
     extends: [jsoncPlugin.configs["flat/recommended-with-json"]],
     files: ["**/*.json"],
-    ignores: ["**/package.json", "**/tsconfig.json", ".vscode/*.json"],
+    ignores: ["**/tsconfig.json", ".vscode/*.json"],
   },
   {
     extends: [jsoncPlugin.configs["flat/recommended-with-jsonc"]],
@@ -231,7 +232,6 @@ const CONFIG: Linter.Config[] = defineConfig(
   {
     extends: [jsoncPlugin.configs["flat/prettier"]],
     files: ["**/*.json", "**/*.jsonc"],
-    ignores: ["**/package.json"],
     rules: {
       "jsonc/sort-keys": ["error", "asc", { caseSensitive: false }],
     },

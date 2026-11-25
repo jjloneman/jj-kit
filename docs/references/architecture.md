@@ -6,19 +6,29 @@ description:
   depends on, and how a changeset becomes an npm release and a git tag.
 tags:
   - actions
+  - changesets
   - ci
+  - dogfooding
+  - git-tags
+  - kit-changesets-changelog
   - layout
+  - npm
   - packages
   - releases
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T18:01:48Z }
+  - testing
+  - type-stripping
+  - version-pr
+  - workspace
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T23:18:56Z }
 verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
 ---
 
 # Architecture
 
-- **As of 2026-11-25.** The workspace, CI and release pipeline are in place; no
-  package or action is built yet.
+- **As of 2026-11-25.** The workspace, CI and release pipeline are in place, and
+  `kit-changesets-changelog` (#4) is the first package built; no other package
+  or action is built yet.
 - Each package and action issue updates this page in the same PR.
 - Why it's built this way is in the [decisions bundle](../decisions/index.md).
 
@@ -108,6 +118,8 @@ graph TD
 3. **The version PR's CI run waits for approval**, since `GITHUB_TOKEN` opened
    it; the owner approves it, then squash-merges it.
 4. **That merge bumps each package's version and writes its `CHANGELOG.md`.**
+   - Each line comes from `kit-changesets-changelog`, which jj-kit loads from
+     its source under Node's type stripping, so versioning needs no build.
 5. **The run on the merge runs `pnpm release`**
    (`pnpm build && changeset publish`), unless an empty changeset is pending
    (see below); it publishes every version npm doesn't have yet through npm

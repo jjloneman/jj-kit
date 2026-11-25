@@ -7,20 +7,26 @@ description:
   moratorium.
 tags:
   - actions
+  - changelog
+  - changesets
   - consumers
+  - kit-changesets-changelog
   - moratorium
+  - node
   - packages
   - pinning
+  - pull-requests
   - renovate
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T17:54:10Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T23:18:56Z }
 verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
 ---
 
 # Consuming the kit
 
-- **As of 2026-11-25,** no package or action is published yet; each section
-  below is filled in by the PR that ships it.
+- **As of 2026-11-25,** `kit-changesets-changelog` is built and awaits its first
+  release; no other package or action is built yet.
+- Each section below is filled in by the PR that ships it.
 - For a reader in another repo: what to install, what to write, and what to
   delete.
 
@@ -54,7 +60,18 @@ verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
 
 ### kit-changesets-changelog
 
-- 🚧 Coming in #4.
+- **Install it**, then name it in `.changeset/config.json`:
+
+  ```json
+  { "changelog": "@jjloneman/kit-changesets-changelog" }
+  ```
+
+- **Delete** any copied formatter script and the `changelog` path that loaded
+  it.
+- **Run `changeset version` from the repo root**, since the formatter reads git
+  from the current directory; the changesets CLI and action already do.
+- **Keep PR titles conventional**, `<type>(<scope>): <gitmoji> <subject>`, since
+  each squash commit's subject becomes its changelog line's prefix.
 
 ### kit-eslint-config
 

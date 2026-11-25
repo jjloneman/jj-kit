@@ -24,6 +24,10 @@
 - `packages/<name>/` — one npm package each, with its own `package.json` and
   `tsconfig.json`, built with its own `tsdown.config.ts` unless it ships JSON
   only.
+  - `changesets-changelog/` — `@jjloneman/kit-changesets-changelog`, the gitmoji
+    changelog formatter, which jj-kit's own `.changeset/config.json` loads from
+    source.
+  - Each package's `tsconfig.json` is copied from okf-tools until #8.
 - `docs/decisions/` and `docs/references/` — the repo's own OKF bundles (see
   [Design decisions](#-design-decisions)).
 - `.changeset/` — pending changesets (see
@@ -200,9 +204,6 @@
   - Each package with a `package.json` is its own Vitest project.
 - **`pnpm test:coverage` adds the gate:** **100%** statements, branches,
   functions, and lines across `packages/*/src`.
-- **Until the first package lands, the suite passes with no tests.**
-  - Drop the `PACKAGE_DIRS.length` guard and `passWithNoTests` in
-    [vitest.config.ts](vitest.config.ts) when it does.
 - A branch nothing can reach is dead code to delete, not a line to exempt; no
   coverage-ignore comments.
 - **Test data is fabricated.** Never copy a real repo's files into a test.
@@ -302,17 +303,18 @@
     `CHANGELOG.md`.
   - A PR that only touches tooling, tests, CI, or docs runs
     `pnpm changeset --empty`, which records no release.
-    - Until the first package lands, `--empty` refuses to run ("No packages
-      found").
-    - Write the file by hand instead: a `.changeset/<name>.md` holding only
-      `---` and `---`, which is all `--empty` writes.
   - **Name every package you want released.** A package that depends on another
     kit package is bumped on its own only when the new version falls outside the
     range it depends on.
     - `updateInternalDependencies: patch` only updates that range in a dependent
       that's already being released.
-- **Changelog lines come from the stock `@changesets/cli/changelog`** until #4
-  ships `@jjloneman/kit-changesets-changelog`.
+- **Changelog lines come from `@jjloneman/kit-changesets-changelog`**, loaded
+  from `packages/changesets-changelog/src/index.ts` under Node's type stripping,
+  so versioning needs no build first.
+  - Each line takes the gitmoji and scope of the PR title that added the
+    changeset, so a PR title that breaks the commit conventions loses them.
+  - The source must stay erasable syntax with `.ts` import specifiers.
+  - See [How changelog lines are built](docs/decisions/changelog-format.md).
 - **Empty changesets never release.**
   - `release.yml` skips the version PR while every pending changeset is empty.
   - The next real one's version PR deletes them all.

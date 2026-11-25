@@ -10,13 +10,13 @@
 - **A public pnpm-workspace monorepo** of npm packages under `@jjloneman/kit-*`, each versioned on its own, plus composite GitHub Actions.
 - **It's public**, so nothing here names or links a private repo: not code, docs, commits, issues or PRs.
   - Write "a personal project" instead.
-- **Until each package ships, the root runs on configs copied from okf-tools.**
+- **Until each package or action ships, the root runs on files copied from okf-tools.**
   - Each copied file opens with a header naming the issue that replaces it.
   - Keep that header when editing one, and give any new copy the same.
 
 ## 🗂️ Project layout
 
-- `packages/<name>/` — one npm package each, with its own `package.json` and `tsconfig.json`, built with its own `tsdown.config.ts`.
+- `packages/<name>/` — one npm package each, with its own `package.json` and `tsconfig.json`, built with its own `tsdown.config.ts` unless it ships JSON only.
 - `docs/decisions/` and `docs/references/` — the repo's own OKF bundles (see [Design decisions](#-design-decisions)).
 - `.changeset/` — pending changesets (see [Versioning & releases](#-versioning--releases)).
 - `.github/`:
@@ -26,11 +26,9 @@
   - `scripts/renovate-ships.sh` — decides whether a Renovate PR needs a changeset (#5 replaces it).
 - `.githooks/` — the `pre-commit` and `pre-push` hooks (#11 replaces them).
 - `eslint-rules/` — the local `no-dotted-jsdoc-param` rule, loaded by `eslint.config.ts` (#9 replaces it).
-- Root configs, each copied from okf-tools until its package lands:
-  - `eslint.config.ts` (#10);
-  - `prettier.config.ts` (#7);
-  - `tsconfig.json`, which covers the root's own files only (#8);
-  - `vitest.config.ts`, one Vitest project per package.
+- Root configs:
+  - `eslint.config.ts` (#10), `prettier.config.ts` (#7) and `tsconfig.json`, which covers the root's own files only (#8), each copied from okf-tools until the package that replaces it lands;
+  - `vitest.config.ts`, one Vitest project per package, which no kit package replaces.
 - `pnpm-workspace.yaml` — the workspace, the shared `catalog` of dev dependency versions (referenced as `catalog:`), and the [moratorium](#-7-day-dependency-moratorium).
 
 ## 🎨 Code style
@@ -158,7 +156,7 @@
 
 ## ✅ Pre-commit checks
 
-- **Run `pnpm check` before committing**, the same gates CI requires:
+- **Run `pnpm check` before committing**, every gate CI requires except `🦋 Changeset`:
   - it fixes lint and formatting;
   - then runs the typecheck, the tests with coverage and the package checks.
   - It rewrites files, so read the diff after.
@@ -248,6 +246,8 @@
   - [docs/decisions/](docs/decisions/index.md) — one Markdown file per decision;
   - [docs/references/](docs/references/index.md) — reference material, such as the architecture.
 - **Each bundle lists its records in its `index.md`.**
+- **A record's `tags` are a YAML block list**, one `- tag` per line, sorted alphabetically, naming every specific subject it covers.
+  - Each comes from its bundle's tag vocabulary in `index.md`; add a new tag there first.
 - **They're signed off with [okf-tools](https://github.com/jjloneman/okf-tools)' `okf-verify`**, configured by `okf.bundles` and `okf.verifiedBy` in `package.json`.
 - **Base a record on the code and the closed threads**, not on memory.
   - Re-read the code before stating a setting or a fallback.

@@ -29,11 +29,13 @@
   - [require-changeset](#require-changeset)
   - [version-or-release](#version-or-release)
   - [setup](#setup)
+- [📚 Design decisions](#-design-decisions)
 - [🛠️ Contributing](#️-contributing)
 
 ## 📦 Packages
 
 - Each package is published to npm under `@jjloneman/`, with its own version and `CHANGELOG.md`.
+- [Consuming the kit](docs/references/consuming.md) shows how to install and wire each one.
 
 ### kit-changesets-changelog
 
@@ -62,6 +64,7 @@
 ## 🎬 Actions
 
 - Composite actions, referenced as `jjloneman/jj-kit/actions/<name>`.
+- [Consuming the kit](docs/references/consuming.md) shows how to pin and use each one.
 
 ### require-changeset
 
@@ -75,6 +78,14 @@
 
 - 🚧 Coming in #6: installs pnpm and Node, then the frozen-lockfile dependency tree.
 
+## 📚 Design decisions
+
+- **Why the kit works the way it does** is in [docs/decisions/](docs/decisions/index.md), one record per decision.
+- **How it's built and consumed** is in [docs/references/](docs/references/index.md):
+  - [Architecture](docs/references/architecture.md);
+  - [Consuming the kit](docs/references/consuming.md).
+- Both are [Open Knowledge Format](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) bundles: agents draft each record, and the owner signs it off with [okf-tools](https://github.com/jjloneman/okf-tools).
+
 ## 🛠️ Contributing
 
 - Node 26 and pnpm 12 are required.
@@ -85,7 +96,7 @@ pnpm install
 pnpm check
 ```
 
-- **`pnpm check` runs the same gates CI requires:**
+- **`pnpm check` runs every gate CI requires except `🦋 Changeset`:**
   - it fixes lint and formatting;
   - then runs the typecheck, the tests with coverage and the package checks.
 - **Every PR adds or edits a changeset**, and CI's `🦋 Changeset` job fails a PR without one:
@@ -94,8 +105,9 @@ pnpm check
   - Until the first package lands, write the empty one by hand, as [.changeset/README.md](.changeset/README.md) says.
 - Each package lives in `packages/<name>` with its own `package.json` and `tsconfig.json`.
 - Shared dev dependency versions live in `pnpm-workspace.yaml`'s `catalog`; reference them as `catalog:`.
-- **A published package builds with its own `tsdown.config.ts`.**
+- **A package that builds code has its own `tsdown.config.ts`.**
   - It defines a `lint:package` script, `pnpm build && publint && attw --pack --profile esm-only`, which CI's `📦 Package` job runs.
+  - A JSON-only package, such as `kit-tsconfig`, has no build config, and its `lint:package` runs publint alone (#8).
 - Tests run as one Vitest workspace from the root, with a 100% coverage gate over `packages/*/src`.
 - JSON keys, `package.json` included, stay alphabetized at every level; `pnpm lint:fix` sorts them.
 - Merging the rolling `chore(release): 🚀 version packages` PR publishes each bumped package and tags it `<name>@<version>`.

@@ -16,8 +16,9 @@ sources:
   - id: pnpm-catalogs
     resource: https://pnpm.io/catalogs
     title: pnpm, catalogs
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T18:05:50Z }
+verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
 ---
 
 # How the monorepo is built

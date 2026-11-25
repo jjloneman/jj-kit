@@ -16,8 +16,9 @@ sources:
   - id: prettier-print-width
     resource: https://prettier.io/docs/options#print-width
     title: Prettier options, print width
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T17:54:10Z }
+verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
 ---
 
 # How a record's tags are laid out

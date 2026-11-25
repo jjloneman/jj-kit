@@ -15,8 +15,9 @@ sources:
   - id: okf-spec
     resource: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md
     title: Open Knowledge Format specification
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T18:01:48Z }
+verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
 ---
 
 # Why decisions and references are two OKF bundles

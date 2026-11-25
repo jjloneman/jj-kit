@@ -8,8 +8,9 @@ tags:
   - layout
   - packages
   - releases
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T18:01:48Z }
+verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
 ---
 
 # Architecture

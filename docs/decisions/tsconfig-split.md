@@ -15,8 +15,9 @@ sources:
   - id: ts-choosing-compiler-options
     resource: https://www.typescriptlang.org/docs/handbook/modules/guides/choosing-compiler-options.html
     title: "TypeScript handbook, Modules: Choosing Compiler Options"
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T17:54:10Z }
+verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
 ---
 
 # How the shared tsconfigs are split

@@ -13,8 +13,9 @@ sources:
   - id: changesets-config
     resource: https://github.com/changesets/changesets/blob/main/docs/config-file-options.md
     title: Changesets, config file options
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T17:54:10Z }
+verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
 ---
 
 # Why each package is versioned on its own

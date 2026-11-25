@@ -255,8 +255,8 @@
 - **An agent writes a record as `status: draft`** and records itself in `generated`, as `<producer>/<version>` (`claude-code/<model-id>`).
   - It never adds a `verified` entry on its own.
 - **Never make up a date or time** in a record: `generated.at`, an "as of" date, anything.
-  - Read it from `date -u +%Y-%m-%dT%H:%M:%SZ` right before writing it.
-  - A `generated.at` ahead of the clock can't be signed off, since okf-tools refuses one later than `verified.at`.
+  - Read it right before writing it: `date -u +%Y-%m-%dT%H:%M:%SZ` for a timestamp, `date -u +%Y-%m-%d` for an "as of" date.
+  - A `generated.at` ahead of the clock doesn't take a sign-off: okf-tools reads a record as changed while `generated.at` is later than `verified.at`.
 - **An agent verifies only when the owner asks**, with `pnpm okf:verify --yes <paths>`.
   - Name the files rather than passing `--changed`, unless the owner asked for every changed record.
   - **It commits the stamp itself**, such as `docs(decisions): 📝 verify 1 decision record`, and never pushes; push it after.

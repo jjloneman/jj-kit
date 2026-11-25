@@ -12,7 +12,7 @@
 
 > 🚧 Under construction: the workspace and its tooling are in place, and the packages are on their way.
 
-## 📑 Contents
+## 📖 Table of contents
 
 - [📦 What's coming](#-whats-coming)
 - [🛠️ Contributing](#️-contributing)

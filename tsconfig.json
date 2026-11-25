@@ -1,0 +1,74 @@
+/*
+ * Typechecks the repo's own root files; each package under `packages/` keeps
+ * its own `tsconfig.json`.
+ *
+ * - Copied from okf-tools until the kit ships its own TypeScript configs; #8
+ *   replaces it with `@jjloneman/kit-tsconfig`.
+ */
+{
+  "compilerOptions": {
+    // Required by `isolatedDeclarations`, even though nothing is emitted here.
+    "declaration": true,
+
+    // Bans syntax that emits code, such as an `enum`, so stripping the types
+    // always leaves plain JavaScript.
+    "erasableSyntaxOnly": true,
+
+    // Optional properties reject an explicit `undefined` unless the type
+    // includes it.
+    "exactOptionalPropertyTypes": true,
+
+    // Every export carries types a declaration emitter can read without the
+    // checker.
+    "isolatedDeclarations": true,
+
+    "lib": ["ES2022"],
+    "module": "ESNext",
+
+    // Resolve imports the way a bundler does, including `package.json`
+    // `exports`.
+    "moduleResolution": "bundler",
+
+    // Typecheck only; nothing at the root is built.
+    "noEmit": true,
+
+    // Index access (`array[i]`, `record[key]`) includes `undefined` in its
+    // type.
+    "noUncheckedIndexedAccess": true,
+
+    // Skip checking `.d.ts` files in `node_modules`; they're not ours to fix.
+    "skipLibCheck": true,
+
+    "strict": true,
+    "target": "ES2022",
+
+    /*
+     * TypeScript 6 defaults `types` to none, so Node's are opted in by name.
+     *
+     * - `@types/node` tracks the `engines.node` floor (26), so the typecheck
+     *   rejects an API a supported Node doesn't have.
+     */
+    "types": ["node"],
+
+    // `import type` is required for type-only imports, and imports are emitted
+    // exactly as written.
+    "verbatimModuleSyntax": true
+  },
+  "include": [
+    /*
+     * The repo's own config files, by glob so a new one is covered the day it
+     * is written.
+     *
+     * - They live in this root because an editor and ESLint's project service
+     *   both resolve a file by walking up to the nearest config named exactly
+     *   `tsconfig.json`.
+     *
+     * - `packages/` is left out on purpose: each package's own `tsconfig.json`
+     *   is the nearest one for its files.
+     */
+    "*.config.ts",
+
+    // Local ESLint rules, imported by eslint.config.ts.
+    "eslint-rules"
+  ]
+}

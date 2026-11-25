@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# Copied from okf-tools until the kit ships its own git hooks.
+#
+# - #11 replaces this hook with `@jjloneman/kit-git-hooks`.
+
+# Whole-project typecheck before pushing.
+#
+# - Single-file typechecking is unsound — a shared-type edit breaks *dependents*
+#   that a per-file check never revisits — so it runs here, once per push, not
+#   per commit.
+pnpm typecheck

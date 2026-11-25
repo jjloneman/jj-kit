@@ -8,7 +8,10 @@
   },
   "description": "🧰 My shared repo kit: lint, format, TypeScript, release and CI configs every repo inherits",
   "devDependencies": {
+    "@changesets/cli": "3.0.3",
+    "@changesets/config": "4.0.1",
     "@eslint/js": "10.0.1",
+    "@jjloneman/okf-tools": "0.1.0",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",
@@ -36,6 +39,13 @@
   "homepage": "https://github.com/jjloneman/jj-kit#readme",
   "license": "MIT",
   "name": "jj-kit",
+  "okf": {
+    "bundles": [
+      "docs/decisions",
+      "docs/references"
+    ],
+    "verifiedBy": "human:jjloneman"
+  },
   "packageManager": "pnpm@12.22.0",
   "private": true,
   "repository": {
@@ -44,13 +54,16 @@
   },
   "scripts": {
     "build": "pnpm -r --if-present build",
+    "changeset": "changeset",
     "check": "pnpm lint:fix && pnpm format && pnpm typecheck && pnpm test:coverage && pnpm lint:package",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --cache --cache-strategy content",
     "lint:fix": "eslint . --fix",
     "lint:package": "pnpm -r --if-present lint:package",
+    "okf:verify": "okf-verify",
     "prepare": "git config core.hooksPath .githooks || true",
+    "release": "pnpm build && changeset publish",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc && pnpm -r --if-present typecheck"

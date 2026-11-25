@@ -20,8 +20,9 @@ sources:
   - id: prettier-prose-wrap
     resource: https://prettier.io/docs/options#prose-wrap
     title: Prettier options, prose wrap
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T19:52:40Z }
+verified: { by: human:jjloneman, at: 2026-11-25T22:06:01Z }
 ---
 
 # How Markdown is wrapped

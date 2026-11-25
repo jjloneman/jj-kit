@@ -1,0 +1,50 @@
+# Versions every package shares, referenced as `catalog:` so one bump moves
+# them all together.
+catalog:
+  "@arethetypeswrong/cli": 0.18.5
+  "@types/node": 26.6.6
+  "@typescript-eslint/utils": 8.73.0
+  "@vitest/coverage-v8": 5.1.0
+  eslint: 10.15.0
+  prettier: 3.10.1
+  publint: 0.3.25
+  tsdown: 0.23.7
+
+  # typescript-eslint peers on `typescript <6.1.0`, so this stays on 6.0.x.
+  typescript: 6.0.3
+
+  # Moves with `@typescript-eslint/utils` above, which the override below
+  # takes from this catalog; bump the two together.
+  typescript-eslint: 8.73.0
+  vitest: 5.1.0
+
+# Supply-chain floor: refuse to install any version younger than 7 days, giving
+# the registry time to yank a compromised release before it reaches our
+# lockfile.
+#
+# - Overrides pnpm's built-in 1-day default.
+#
+# - Value is in minutes.
+minimumReleaseAge: 10080
+
+# My own packages skip the floor, so a kit release is usable the day it ships.
+minimumReleaseAgeExclude:
+  - "@jjloneman/*"
+
+# eslint-plugin-tsdoc pins `@typescript-eslint/utils` to `~8.56.0`, whose peer
+# range stops at TypeScript `<6.0.0`.
+#
+# - Lifting it to the typescript-eslint the repo already runs is safe within
+#   the 8.x major, and dedupes the two copies.
+#
+# - Drop this once the plugin widens its range.
+overrides:
+  eslint-plugin-tsdoc>@typescript-eslint/utils: "catalog:"
+
+# Every kit package lives directly under `packages/`.
+packages:
+  - packages/*
+
+# Write exact versions on `pnpm add`, so the lockfile is the only thing that
+# moves a dependency.
+saveExact: true

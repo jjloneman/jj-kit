@@ -25,6 +25,7 @@
       "parameters": {
         "do_not_enforce_on_create": false,
         "required_status_checks": [
+          { "context": "🦋 Changeset", "integration_id": 15368 },
           { "context": "🧹 Lint & format", "integration_id": 15368 },
           { "context": "📦 Package", "integration_id": 15368 },
           { "context": "🧪 Tests", "integration_id": 15368 },

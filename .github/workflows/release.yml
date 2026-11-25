@@ -1,0 +1,67 @@
+# Adapted from okf-tools' release workflow until the kit ships its own actions.
+#
+# - #5 replaces these steps with the kit's `version-or-release` action.
+name: 🚀 Release
+
+on:
+  push:
+    branches: [main]
+
+  # Run on `main` by hand ("Run workflow") when a version PR's merge published
+  # nothing; re-running an old run would act on its old commit.
+  workflow_dispatch: {}
+
+# One release run at a time, so two never publish or push the version branch
+# at once.
+#
+# - It doesn't queue: GitHub keeps one pending run per group and cancels it
+#   when a newer one arrives, which can drop the run that should publish.
+#
+# - So a version PR's merge can go unpublished; the `workflow_dispatch` above
+#   is the way back, and #5 replaces this.
+concurrency:
+  cancel-in-progress: false
+  group: ${{ github.workflow }}
+
+# Nothing by default; each job grants only what it uses.
+permissions: {}
+
+jobs:
+  release:
+    name: 🦋 Version PR or publish
+
+    # A dispatch on another branch would version or publish from it.
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+      # Trusted publishing: npm trades this OIDC token for a one-off publish
+      # token, and the same identity signs the provenance statement.
+      id-token: write
+      pull-requests: write
+    steps:
+      # changesets/action v2 pushes through the API with its own token, so
+      # install and build scripts never see a persisted write token.
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+
+      # Publishes only when no changeset is pending, so a version PR's merge
+      # with an empty one left on `main` waits for the next version PR's.
+      - id: changesets
+        uses: changesets/action@v2.1.2
+        with:
+          commit-message: "chore(release): 🚀 version packages"
+          pr-title: "chore(release): 🚀 version packages"
+          publish-script: pnpm release
+
+      # changesets/action has no assignee or label option, so add them here.
+      - if: ${{ steps.changesets.outputs.pr-number != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.changesets.outputs.pr-number }}
+        run: >-
+          gh pr edit "$PR_NUMBER" --add-assignee jjloneman
+          --add-label "🚀 release" --repo "$GITHUB_REPOSITORY"

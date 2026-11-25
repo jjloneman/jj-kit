@@ -19,6 +19,80 @@ permissions: {}
 # Each job's `name` is a required status check in `.github/rulesets/main.json`,
 # so renaming one means updating the ruleset in the same PR.
 jobs:
+  # Adapted from okf-tools' job until the kit ships its own release actions.
+  #
+  # - #5 replaces this job with the kit's `require-changeset` action.
+  #
+  # - It differs from okf-tools' on purpose, so don't re-sync it from there; see
+  #   docs/decisions/changeset-every-pr.md.
+  changeset:
+    name: 🦋 Changeset
+
+    # Every PR except the version PR (`changeset-release/main`), which only
+    # consumes changesets.
+    #
+    # - It's matched by branch and by repo, so a fork's branch of the same name
+    #   is still checked.
+    if: >-
+      ${{ github.event_name == 'pull_request' && !(
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.head_ref == 'changeset-release/main') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # The full history, so the base branch exists to diff against.
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+
+      # A Renovate PR (`renovate/*` from this repo) needs no changeset unless
+      # it changes what a package ships, which the script decides.
+      #
+      # - A runtime bump must reach consumers as a release, but most Renovate
+      #   PRs bump dev dependencies and ship nothing.
+      #
+      # - The script fails rather than answer `false` when it can't tell, so a
+      #   broken check never skips the changeset.
+      - id: renovate
+        if: >-
+          ${{ github.event.pull_request.head.repo.full_name == github.repository
+          && startsWith(github.head_ref, 'renovate/') }}
+        run: .github/scripts/renovate-ships.sh >> "$GITHUB_OUTPUT"
+
+      # Fails when the PR adds or edits no changeset, judged by changesets'
+      # own reader.
+      #
+      # - `changeset status` alone can't do this: it fails only when a
+      #   versionable package changed, so it passes a PR that touches only
+      #   root files, and every PR before the first package lands.
+      #
+      # - Its `--output` lists the changesets the PR touched by changesets'
+      #   rules, so a file it ignores (`.changeset/drafts/x.md`) doesn't count.
+      #
+      # - A shipping Renovate PR needs a changeset that bumps a package, since
+      #   an empty one would merge the bump without a release.
+      - if: ${{ steps.renovate.outputs.ships != 'false' }}
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+          RENOVATE_SHIPS: ${{ steps.renovate.outputs.ships }}
+          STATUS_FILE: ${{ runner.temp }}/changeset-status.json
+        run: |
+          pnpm changeset status --since="$BASE_REF" --output="$STATUS_FILE"
+          if [ "$RENOVATE_SHIPS" = "true" ]; then
+            if [ "$(jq '.releases | length' "$STATUS_FILE")" -eq 0 ]; then
+              echo "::error::This Renovate PR changes what a package ships." \
+                "Add a \`pnpm changeset\` that bumps it to its branch."
+              exit 1
+            fi
+          elif [ "$(jq '.changesets | length' "$STATUS_FILE")" -eq 0 ]; then
+            echo "::error::This PR adds no changeset. Run \`pnpm changeset\`," \
+              "or \`pnpm changeset --empty\` if it releases nothing."
+            exit 1
+          fi
+
   lint:
     name: 🧹 Lint & format
     runs-on: ubuntu-latest

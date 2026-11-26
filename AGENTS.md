@@ -367,6 +367,22 @@
   - Approve it on the PR before merging, since `main` requires every check.
   - Squash-merging it bumps each package's `package.json` and writes its
     `CHANGELOG.md`.
+  - **Its squash commit keeps the PR title as its subject**, with one
+    `- release <name>@<version>` bullet per package or action it releases, the
+    exact spec npm installs and the tag the release run makes, then `Refs:` for
+    each issue whose changesets it ships.
+    - The only trailer is GitHub's `Co-authored-by: github-actions[bot]`, since
+      the bot wrote the PR's changes; no Claude trailer.
+
+    ```text
+    chore(release): 🚀 version packages (#20)
+
+    - release @jjloneman/kit-changesets-changelog@0.1.0
+
+    Refs: #4
+    Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+    ```
+
   - The run on that merge runs `pnpm release`
     (`pnpm build && changeset publish`).
   - That publishes every package version npm doesn't have yet, and tags each as
@@ -393,7 +409,16 @@
   before the first version PR that bumps it merges.
   - Trusted publishing can only be set up for a package that already exists, so
     the automated publish of a package npm has never seen fails partway.
-  - The owner then adds `release.yml` as its trusted publisher.
+  - **Publish it as a `0.0.1-stage` placeholder with `--tag stage`**, set with
+    `npm pkg set version=0.0.1-stage` and reverted after, never committed.
+    - As of 2026-11-26 npm reserves `0.0.0-stage` for its staged publishing and
+      refuses it with a 403.
+    - The placeholder is staged for a minute or two before `npm view` sees it.
+  - The owner then adds `release.yml` as its trusted publisher, with "Allow npm
+    publish" ticked, in an external browser: the Claude desktop app's browser
+    pane can't answer npm's security-key 2FA.
+    - It stays "Pending validation" until a publish goes through it, with a
+      deadline about two days out, so merge the version PR before then.
 - **Never hand-run a version bump or `git tag`**; the version PR owns both.
 - `CHANGELOG.md` is in `.prettierignore`, since changesets writes it.
 

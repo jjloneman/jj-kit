@@ -20,7 +20,7 @@ sources:
     resource: https://github.com/changesets/changesets/blob/main/docs/command-line-options.md
     title: Changesets, command line options
 status: draft
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T04:03:36Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T04:26:32Z }
 verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
 ---
 
@@ -56,6 +56,18 @@ verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
   only consumes changesets, when its author is in the action's
   `version-pr-authors` input, `github-actions[bot]` by default; a fork's or a
   person's branch of that name is still checked.
+  - **In jj-kit, `ci.yml` also skips the whole job for the version PR**, by
+    repo, branch and `github-actions[bot]`, so the version PR needs no checkout
+    or install; a skipped required job counts as passing.
+    - The job's condition repeats `version-pr-authors` with fixed values, and a
+      comment above it says to change the two together.
+    - If they drift, the action still skips the version PR, so the only cost is
+      that install; drift can't let a missing changeset through.
+    - **Rejected: dropping the job-level skip,** which pays a full checkout and
+      install on every version PR (#5's review).
+    - **Rejected: a separate classify job** that the changeset job depends on,
+      which costs an extra runner on every PR, more than the install it saves
+      (#5's review).
 - **A Renovate PR from this repo skips it only when it ships nothing**, as the
   action decides.
   - It's a Renovate PR when its branch matches the action's `renovate-branches`
@@ -102,8 +114,9 @@ verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
     changeset.
     - A workspace file that lists package globs makes the repo a monorepo, as
       Changesets decides, even before a package matches them.
-  - **The actions need `@changesets/cli` 3 or later**, whose `privatePackages`
-    defaults they read, and fail on an older one.
+  - The actions need `@changesets/cli` 3 or later, whose `privatePackages`
+    defaults they read (see
+    [What the actions require of a consumer](action-requirements.md)).
   - The action fails rather than answer "ships nothing" when it can't tell, so a
     broken check never skips a changeset.
   - **Rejected: skipping every Renovate PR,** as #12's plan first had it: a

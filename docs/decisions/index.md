@@ -35,6 +35,11 @@ okf_version: "0.2"
   project shares, `node.json` for code Node runs under type stripping,
   `bundler.json` for bundled code and `lib.json` for published packages,
   following the TypeScript docs' module templates.
+- [What the actions require of a consumer](action-requirements.md) - The kit's
+  actions run on a Linux or macOS runner after the consumer's own setup step,
+  with Node 26, pnpm, `@changesets/cli` 3 or later and, for a Renovate PR, `yq`
+  v4; they fail clearly when Node or the Changesets CLI is too old, rather than
+  bringing their own.
 - [Which token opens the version PR](version-pr-token.md) - The rolling version
   PR is opened with the workflow's own `GITHUB_TOKEN`, so its CI run needs one
   approval click per release and each repo allows GitHub Actions to create pull
@@ -190,6 +195,7 @@ verified: { by: human:jjloneman, at: 2026-11-25T13:00:00Z }
 - `releases`: Versioning and publishing.
 - `renovate`: Renovate's dependency updates.
 - `rulesets`: The branch rules that protect `main`.
+- `runners`: The GitHub Actions runners a job runs on.
 - `semver`: Semantic versioning and what counts as breaking.
 - `setup-action`: The action that installs pnpm, Node and dependencies.
 - `shell`: Shell scripts and running commands through a shell.

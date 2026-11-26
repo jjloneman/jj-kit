@@ -21,7 +21,7 @@ tags:
   - renovate
   - version-pr
 status: draft
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T04:03:36Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T04:26:32Z }
 verified: { by: human:jjloneman, at: 2026-11-26T01:05:37Z }
 ---
 
@@ -38,6 +38,9 @@ verified: { by: human:jjloneman, at: 2026-11-26T01:05:37Z }
 - **Node 26 and pnpm** for the repo's tooling, whatever Node its own published
   code supports (see
   [Why the kit supports Node 26 only](../decisions/node-26-only.md)).
+- **For the actions, a Linux or macOS runner and `@changesets/cli` 3 or later**
+  (see
+  [What the actions require of a consumer](../decisions/action-requirements.md)).
 - **Install every package as an exact-pinned dev dependency:**
 
   ```sh

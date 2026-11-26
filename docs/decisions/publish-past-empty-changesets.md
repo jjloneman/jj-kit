@@ -19,7 +19,7 @@ sources:
     resource: https://github.com/changesets/action/blob/v2.1.2/src/index.ts
     title: changesets/action v2.1.2, src/index.ts
 status: draft
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T03:36:21Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T04:26:32Z }
 ---
 
 # Why empty changesets don't block a publish
@@ -54,9 +54,14 @@ generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T03:36:21Z }
       published or tagged at `0.0.0` (#5's review).
     - A monorepo's root, and a package the config's `ignore` names, are left
       out, since Changesets never releases them.
+    - The run shows a notice naming the package, so a held-back publish isn't
+      silent (#5's review).
   - **When it can't read the changesets or the workspace's packages, it warns
-    and leaves them alone**, so `changesets/action` runs as it would without it;
-    only a failure to delete one fails the step.
+    and leaves them alone**, so `changesets/action` runs as it would without it.
+    - Only `@changesets/cli` older than 3, or a failure to delete a changeset,
+      fails the step; a half-deleted set would publish or version from a state
+      no one chose (see
+      [What the actions require of a consumer](action-requirements.md)).
     - `changeset status` without `--since` diffs against `baseBranch`, which a
       detached checkout or another release branch may not have (#5's review).
   - The decision is TypeScript, tested at 100% like `require-changeset`'s.

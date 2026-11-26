@@ -9,6 +9,7 @@ tags:
   - actions
   - changelog
   - changesets
+  - ci
   - consumers
   - kit-changesets-changelog
   - moratorium
@@ -16,16 +17,18 @@ tags:
   - packages
   - pinning
   - pull-requests
+  - releases
   - renovate
+  - version-pr
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T23:18:56Z }
-verified: { by: human:jjloneman, at: 2026-11-26T01:05:37Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T05:03:12Z }
+verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
 ---
 
 # Consuming the kit
 
-- **As of 2026-11-25,** `kit-changesets-changelog` is built and awaits its first
-  release; no other package or action is built yet.
+- **As of 2026-11-26,** `kit-changesets-changelog` and the `require-changeset`
+  and `version-or-release` actions are built; no other package or action is.
 - Each section below is filled in by the PR that ships it.
 - For a reader in another repo: what to install, what to write, and what to
   delete.
@@ -35,6 +38,9 @@ verified: { by: human:jjloneman, at: 2026-11-26T01:05:37Z }
 - **Node 26 and pnpm** for the repo's tooling, whatever Node its own published
   code supports (see
   [Why the kit supports Node 26 only](../decisions/node-26-only.md)).
+- **For the actions, a Linux or macOS runner and `@changesets/cli` 3 or later**
+  (see
+  [What the actions require of a consumer](../decisions/action-requirements.md)).
 - **Install every package as an exact-pinned dev dependency:**
 
   ```sh
@@ -95,21 +101,52 @@ verified: { by: human:jjloneman, at: 2026-11-26T01:05:37Z }
 
 ## Actions
 
-- **Pin each action by full commit SHA, with the version in a comment**, so the
-  pin can't move and Renovate can still read the version:
+- **Pin each action by full commit SHA, with its tag in a comment**, so the pin
+  can't move and the version stays readable:
 
   ```yaml
   - uses: jjloneman/jj-kit/actions/<name>@<sha> # <name>@<version>
   ```
 
-  - The `<name>@<version>` comment assumes each action gets its own tag, which
-    #5 decides; until then this format is pending.
-  - Whether Renovate updates a pin on a path inside a repo this way is assumed,
-    not yet checked; #5 checks it.
+  - Each action has its own `<name>@<version>` tag and `CHANGELOG.md` (see
+    [How the actions are versioned](../decisions/action-versions.md)).
+  - **Renovate's built-in `github-actions` manager can't update these pins**, so
+    bump them by hand until the kit ships a Renovate preset for them.
+
+- **Run each action after your own setup step**, which checks out the repo and
+  installs pnpm, Node 26 and the workspace, `@changesets/cli` 3 or later
+  included.
 
 ### require-changeset
 
-- 🚧 Coming in #5.
+- **Replace the inline changeset job's steps** with the action, and keep the
+  job's name if it's a required check:
+
+  ```yaml
+  changeset:
+    name: 🦋 Changeset
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@<sha> # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Your setup step: pnpm, Node 26 and `pnpm install`.
+      - uses: jjloneman/jj-kit/actions/require-changeset@<sha> # require-changeset@<version>
+  ```
+
+- **`fetch-depth: 0` is required**; the action fails on a shallow checkout.
+- **To spare the version PR a checkout and install**, skip the job for it, as
+  jj-kit's own `ci.yml` does; a skipped required job counts as passing.
+- **A self-hosted Renovate** passes its login in `renovate-authors`, and a
+  custom `branchPrefix` in `renovate-branches`.
+- **A version PR opened with another token**, such as a GitHub App's, passes
+  that token's login in `version-pr-authors`.
+- **Delete** any copied changeset check or Renovate "ships" script.
 
 ### setup
 
@@ -117,7 +154,36 @@ verified: { by: human:jjloneman, at: 2026-11-26T01:05:37Z }
 
 ### version-or-release
 
-- 🚧 Coming in #5.
+- **Replace the `changesets/action` step**, and any step that labels the version
+  PR, with the action, if that step sets only the inputs the action passes
+  through: `commit-message`, `github-token`, `pr-title` and `publish-script`.
+  - A step that also sets others, such as `version-script`, `cwd`, `pr-draft`,
+    `create-github-releases` or `push-git-tags`, keeps `changesets/action` for
+    now; the action doesn't pass those on.
+
+  ```yaml
+  release:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@<sha> # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Your setup step: pnpm, Node 26 and `pnpm install`.
+      - uses: jjloneman/jj-kit/actions/version-or-release@<sha> # version-or-release@<version>
+        with:
+          assignee: <login>
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          publish-script: pnpm release
+  ```
+
+- **Drop any manual recovery for a merge that published nothing**: the next run
+  with no releasing changeset pending publishes it.
 - **The repo allows GitHub Actions to create pull requests**, in Settings →
   Actions → General, and has a `🚀 release` label.
 - **Its version PR's CI run waits for an approval click** each release (see

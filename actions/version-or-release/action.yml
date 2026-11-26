@@ -1,0 +1,115 @@
+name: 🦋 Version PR or release
+description: >-
+  Keeps the rolling Changesets version PR open, labeled and assigned, while
+  changesets are pending, and publishes once it merges.
+
+# Needs, from the caller:
+#
+# - a push to the release branch, with `contents: write` and
+#   `pull-requests: write`, plus `id-token: write` for npm trusted publishing;
+#
+# - "Allow GitHub Actions to create and approve pull requests" on, in the
+#   repo's Actions settings, when `github-token` is `GITHUB_TOKEN`;
+#
+# - a checkout, and Node 26 and pnpm with the workspace installed,
+#   `@changesets/cli` 3 or later included, from the caller's own setup step;
+#
+# - a Linux or macOS runner, since the script runs `pnpm` without a shell,
+#   which fails on Windows;
+#
+# - the `label` in the repo, or the step that labels the version PR fails.
+inputs:
+  assignee:
+    default: ""
+    description: The login to assign the version PR to; empty assigns no one.
+  commit-message:
+    default: "chore(release): 🚀 version packages"
+    description: The version PR's commit message.
+  github-token:
+    description: >-
+      The token that opens the version PR and pushes tags, such as
+      `secrets.GITHUB_TOKEN`.
+    required: true
+  label:
+    default: 🚀 release
+    description: >-
+      The label to add to the version PR, which must exist in the repo; empty
+      adds none.
+  pr-title:
+    default: "chore(release): 🚀 version packages"
+    description: The version PR's title.
+  publish-script:
+    default: ""
+    description: >-
+      The command that builds and publishes, such as `pnpm release`; empty
+      never publishes.
+
+outputs:
+  pr-number:
+    description: The version PR's number, when one was opened or updated.
+    value: ${{ steps.changesets.outputs.pr-number }}
+  published:
+    description: '"true" when packages were published, else "false".'
+    value: ${{ steps.changesets.outputs.published }}
+  published-packages:
+    description: >-
+      A JSON array of the published packages, such as `[{"name": "a",
+      "version": "1.0.0"}]`.
+    value: ${{ steps.changesets.outputs.published-packages }}
+
+runs:
+  using: composite
+  steps:
+    # changesets/action neither opens a version PR nor publishes while every
+    # pending changeset is empty, so a version PR's merge with an empty one
+    # left on `main`, or a run that was cancelled, would publish nothing.
+    #
+    # - The script deletes the empty ones from this run's checkout, which
+    #   sends it down the publish path; nothing is committed, and the next
+    #   version PR deletes them for good.
+    #
+    # - It leaves them alone while a package the publish would release is
+    #   still at 0.0.0, a public one or a tagged private one, or when it can't
+    #   read them, so changesets/action runs as usual.
+    #
+    # - It's TypeScript that Node runs under type stripping, so an older
+    #   default Node on the runner fails with a clear message instead.
+    - name: 🔍 Check Node
+      if: ${{ inputs.publish-script != '' }}
+      shell: bash
+      run: bash "$GITHUB_ACTION_PATH/../lib/check-node.sh" version-or-release
+
+    - name: 🧺 Set aside empty changesets
+      if: ${{ inputs.publish-script != '' }}
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/src/index.ts"
+
+    - name: 🦋 Version PR or publish
+      id: changesets
+      uses: changesets/action@v2.1.2
+      with:
+        commit-message: ${{ inputs.commit-message }}
+        github-token: ${{ inputs.github-token }}
+        pr-title: ${{ inputs.pr-title }}
+        publish-script: ${{ inputs.publish-script }}
+
+    # changesets/action has no assignee or label option, so add them here.
+    - name: 🏷️ Label and assign the version PR
+      if: >-
+        ${{ steps.changesets.outputs.pr-number != '' && (inputs.assignee != ''
+        || inputs.label != '') }}
+      env:
+        ASSIGNEE: ${{ inputs.assignee }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        LABEL: ${{ inputs.label }}
+        PR_NUMBER: ${{ steps.changesets.outputs.pr-number }}
+      shell: bash
+      run: |
+        args=()
+        if [ -n "$ASSIGNEE" ]; then
+          args+=(--add-assignee "$ASSIGNEE")
+        fi
+        if [ -n "$LABEL" ]; then
+          args+=(--add-label "$LABEL")
+        fi
+        gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" "${args[@]}"

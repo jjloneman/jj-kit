@@ -41,8 +41,10 @@ minimumReleaseAgeExclude:
 overrides:
   eslint-plugin-tsdoc>@typescript-eslint/utils: "catalog:"
 
-# Every kit package lives directly under `packages/`.
+# Every kit package lives directly under `packages/`, and every action under
+# `actions/`, as a private package so Changesets versions and tags it.
 packages:
+  - actions/*
   - packages/*
 
 # Write exact versions on `pnpm add`, so the lockfile is the only thing that

@@ -5,15 +5,18 @@ import path from "node:path";
 import { defineConfig } from "vitest/config";
 
 /*
- * Each package's folder, relative to the repo root.
+ * Each package's and action's folder, relative to the repo root.
  *
  * - Found by its `package.json`, so a leftover folder holding only
  *   gitignored `node_modules` or `dist` after a branch switch isn't mistaken
  *   for a package.
  */
-const PACKAGE_DIRS: string[] = globSync("packages/*/package.json", {
-  cwd: import.meta.dirname,
-}).map((manifest) => path.dirname(manifest));
+const PACKAGE_DIRS: string[] = globSync(
+  ["actions/*/package.json", "packages/*/package.json"],
+  {
+    cwd: import.meta.dirname,
+  }
+).map((manifest) => path.dirname(manifest));
 
 const CONFIG: ViteUserConfig = defineConfig({
   /*
@@ -25,7 +28,7 @@ const CONFIG: ViteUserConfig = defineConfig({
   root: import.meta.dirname,
   test: {
     /*
-     * One coverage report across every package, gated at 100%.
+     * One coverage report across every package and action, gated at 100%.
      *
      * - An explicit `include` counts untested files against coverage instead
      *   of leaving them out of the report.
@@ -34,8 +37,8 @@ const CONFIG: ViteUserConfig = defineConfig({
      *   given a `file` writes the per-file table to `coverage/`.
      */
     coverage: {
-      exclude: ["packages/*/src/**/*.test.ts"],
-      include: ["packages/*/src/**/*.ts"],
+      exclude: ["{actions,packages}/*/src/**/*.test.ts"],
+      include: ["{actions,packages}/*/src/**/*.ts"],
       provider: "v8",
       reporter: [
         "html",
@@ -47,7 +50,7 @@ const CONFIG: ViteUserConfig = defineConfig({
       thresholds: { 100: true },
     },
 
-    // Each package is its own Vitest project, configured by its own
+    // Each package and action is its own Vitest project, configured by its own
     // `vitest.config.ts` when it needs more than the defaults.
     projects: PACKAGE_DIRS,
   },

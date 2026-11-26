@@ -63,8 +63,8 @@
      *   both resolve a file by walking up to the nearest config named exactly
      *   `tsconfig.json`.
      *
-     * - `packages/` is left out on purpose: each package's own `tsconfig.json`
-     *   is the nearest one for its files.
+     * - `packages/` and `actions/` are left out on purpose: each package's and
+     *   action's own `tsconfig.json` is the nearest one for its files.
      */
     "*.config.ts",
 

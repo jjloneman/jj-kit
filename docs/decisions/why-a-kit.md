@@ -15,8 +15,8 @@ tags:
   - packages
   - renovate
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T18:05:50Z }
-verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T01:49:34Z }
+verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
 ---
 
 # Why a kit of packages and actions
@@ -70,8 +70,8 @@ verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
   headed with the issue that replaces it: the ESLint config and its local rule,
   the Prettier config, the root `tsconfig.json`, the git hooks and the setup
   action.
-  - `ci.yml`'s changeset job and `release.yml` are adapted from okf-tools rather
-    than copied, and say which issue replaces them in their own comments.
+  - `ci.yml`'s changeset job and `release.yml` now run the kit's own
+    `require-changeset` and `version-or-release` actions (#5).
 
 ## Links
 

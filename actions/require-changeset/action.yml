@@ -1,0 +1,70 @@
+name: 🦋 Require a changeset
+description: >-
+  Fails a pull request that adds no changeset; skips the version PR, and
+  Renovate PRs that ship nothing.
+
+# Needs, from the caller:
+#
+# - a `pull_request` event, and `contents: read`;
+#
+# - a checkout with `fetch-depth: 0`, so the base branch is there to diff
+#   against;
+#
+# - Node 26 on `PATH` and the workspace installed, `@changesets/cli` 3 or
+#   later included, from the caller's own setup step;
+#
+# - a Linux runner: it runs `pnpm` and `git` without a shell, and its glob
+#   matching ignores case on macOS;
+#
+# - `yq` v4 for a Renovate PR, which GitHub's Ubuntu runners ship.
+inputs:
+  base:
+    default: ${{ github.base_ref }}
+    description: >-
+      The branch the PR merges into; `changeset status` diffs against
+      `origin/<base>`.
+  renovate-authors:
+    default: renovate[bot]
+    description: >-
+      Newline-separated logins whose PRs from `renovate-branches` need a
+      changeset only when they change what a package ships.
+  renovate-branches:
+    default: renovate/**
+    description: >-
+      Newline-separated globs of the branches Renovate opens PRs from, matching
+      its `branchPrefix`.
+  skip-branches:
+    default: ""
+    description: >-
+      Newline-separated globs of head branches that skip the check, such as
+      `release/*`; only a PR from this repo can skip.
+  version-pr-authors:
+    default: github-actions[bot]
+    description: >-
+      Newline-separated logins whose `changeset-release/<base>` PR is the
+      version PR, which skips the check; the login of the token that opens
+      it.
+
+runs:
+  using: composite
+  steps:
+    # The scripts are TypeScript that Node runs under type stripping, so an
+    # older default Node on the runner fails with a clear message instead.
+    - name: Check Node
+      shell: bash
+      run: bash "$GITHUB_ACTION_PATH/../lib/check-node.sh" require-changeset
+
+    # Every value goes through `env`, so a branch name can't inject shell.
+    - name: Check for a changeset
+      env:
+        BASE: ${{ inputs.base }}
+        HEAD_REF: ${{ github.head_ref }}
+        HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        RENOVATE_AUTHORS: ${{ inputs.renovate-authors }}
+        RENOVATE_BRANCHES: ${{ inputs.renovate-branches }}
+        REPOSITORY: ${{ github.repository }}
+        SKIP_BRANCHES: ${{ inputs.skip-branches }}
+        VERSION_PR_AUTHORS: ${{ inputs.version-pr-authors }}
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/src/index.ts"

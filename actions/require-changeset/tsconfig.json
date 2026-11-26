@@ -1,0 +1,65 @@
+/*
+ * Typechecks this action's scripts, which Node runs unbuilt under type
+ * stripping.
+ *
+ * - Copied from okf-tools until the kit ships its own TypeScript configs; #8
+ *   replaces it with `@jjloneman/kit-tsconfig`.
+ */
+{
+  "compilerOptions": {
+    /*
+     * Relative imports name the `.ts` file.
+     *
+     * - The action runs `src/index.ts` directly under Node's type stripping,
+     *   which resolves only the real file name.
+     */
+    "allowImportingTsExtensions": true,
+
+    // Required by `isolatedDeclarations`, even though nothing is emitted here.
+    "declaration": true,
+
+    // Node's type stripping rejects syntax that emits code, such as an `enum`.
+    "erasableSyntaxOnly": true,
+
+    // Optional properties reject an explicit `undefined` unless the type
+    // includes it.
+    "exactOptionalPropertyTypes": true,
+
+    // Every export carries types a declaration emitter can read without the
+    // checker, so the published `.d.ts` never depends on inference.
+    "isolatedDeclarations": true,
+
+    "lib": ["ES2022"],
+    "module": "ESNext",
+
+    // Resolve imports the way a bundler does, including `package.json`
+    // `exports`.
+    "moduleResolution": "bundler",
+
+    // Typecheck only; nothing is built.
+    "noEmit": true,
+
+    // Index access (`array[i]`, `record[key]`) includes `undefined` in its
+    // type.
+    "noUncheckedIndexedAccess": true,
+
+    // Skip checking `.d.ts` files in `node_modules`; they're not ours to fix.
+    "skipLibCheck": true,
+
+    "strict": true,
+    "target": "ES2022",
+
+    /*
+     * TypeScript 6 defaults `types` to none, so Node's are opted in by name.
+     *
+     * - `@types/node` tracks the `engines.node` floor (26), so the typecheck
+     *   rejects an API a supported Node doesn't have.
+     */
+    "types": ["node"],
+
+    // `import type` is required for type-only imports, and imports are emitted
+    // exactly as written.
+    "verbatimModuleSyntax": true
+  },
+  "include": ["src"]
+}

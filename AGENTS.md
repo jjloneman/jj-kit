@@ -80,6 +80,10 @@
 - **Named functions are `function` declarations**; arrows are for callbacks and
   closures.
 - **Braces always**, even around a one-line `if` body.
+- **A multi-line expression statement gets a blank line above and below it**,
+  such as a `vi.mock(…)` or an `expect(…)` that wraps, as ESLint's
+  `padding-line-between-statements` does for `multiline-expression`.
+  - Declarations and imports stay grouped.
 - **An unused name keeps a `_` prefix** rather than being dropped, such as
   `const [_file, args] = call`, so it still says what it is.
 - **Semantic names:**
@@ -146,6 +150,9 @@
   included.
   - ESLint's `jsonc/sort-keys` and `yml/sort-keys` enforce it, and
     `pnpm lint:fix` sorts them.
+- **In a YAML list, a blank line separates an item that's an object with more
+  than one key from its neighbors**, such as a workflow step with `with:`.
+  - Single-key items, such as `- uses: …`, may sit together.
 - **GitHub YAML follows a documented order instead**, in `.github/**/*.yml` and
   `actions/*/action.yml`.
   - The orders live in `eslint.config.ts`'s `yml/sort-keys` options, and
@@ -287,6 +294,8 @@
 - **jj-kit uses its actions by local path** (`./actions/<name>`), so a PR's CI
   runs the actions as that PR changes them.
 - **Every action is pinned to an exact `vX.Y.Z`.**
+- **Every job's and every named step's `name` opens with an emoji**, and each
+  step of the kit's own actions is named.
 - **Every job declares its own `permissions`**, under a top-level
   `permissions: {}`.
 - **Every `ci.yml` job is a required check** in

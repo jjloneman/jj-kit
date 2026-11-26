@@ -1,0 +1,20 @@
+{
+  "author": {
+    "name": "JJ Loneman",
+    "url": "https://github.com/jjloneman"
+  },
+  "bugs": {
+    "url": "https://github.com/jjloneman/jj-kit/issues"
+  },
+  "description": "🧰 A composite GitHub Action that installs pnpm, Node and the frozen-lockfile dependency tree.",
+  "homepage": "https://github.com/jjloneman/jj-kit#setup",
+  "license": "MIT",
+  "name": "setup",
+  "private": true,
+  "repository": {
+    "directory": "actions/setup",
+    "type": "git",
+    "url": "git+https://github.com/jjloneman/jj-kit.git"
+  },
+  "version": "0.0.0"
+}

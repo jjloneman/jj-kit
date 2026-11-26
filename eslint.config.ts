@@ -273,7 +273,7 @@ const CONFIG: Linter.Config[] = defineConfig(
    *   alphabetical fallback comes last.
    */
   {
-    files: [".github/**/*.yml"],
+    files: [".github/**/*.yml", "actions/*/action.yml"],
     rules: {
       "yml/sort-keys": [
         "error",

@@ -63,7 +63,6 @@
     "lint:package": "pnpm -r --if-present lint:package",
     "okf:verify": "okf-verify",
     "prepare": "git config core.hooksPath .githooks || true",
-    "release": "pnpm build && changeset publish",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc && pnpm -r --if-present typecheck"

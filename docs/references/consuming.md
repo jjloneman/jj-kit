@@ -22,15 +22,15 @@ tags:
   - setup-action
   - version-pr
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T19:09:51Z }
-verified: { by: human:jjloneman, at: 2026-11-26T19:29:41Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T22:04:04Z }
+verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
 ---
 
 # Consuming the kit
 
-- **As of 2026-11-26,** `kit-changesets-changelog` and the `require-changeset`,
-  `setup` and `version-or-release` actions are built; no other package or action
-  is.
+- **As of 2026-11-26,** `kit-changesets-changelog` and the `pack-release`,
+  `require-changeset`, `setup` and `version-or-release` actions are built; no
+  other package or action is.
 - Each section below is filled in by the PR that ships it.
 - For a reader in another repo: what to install, what to write, and what to
   delete.
@@ -179,18 +179,43 @@ verified: { by: human:jjloneman, at: 2026-11-26T19:29:41Z }
 - **Delete** the repo's own `.github/actions/setup` once every job uses the
   action.
 
-### version-or-release
+### pack-release and version-or-release
 
-- **Replace the `changesets/action` step**, and any step that labels the version
-  PR, with the action, if that step sets only the inputs the action passes
-  through: `commit-message`, `github-token`, `pr-title` and `publish-script`.
-  - A step that also sets others, such as `version-script`, `cwd`, `pr-draft`,
-    `create-github-releases` or `push-git-tags`, keeps `changesets/action` for
-    now; the action doesn't pass those on.
+- **They replace the release job's `changesets/action` step**, and any step that
+  labels the version PR, as two jobs: `pack-release` in a job with no write
+  access, then `version-or-release` in one that holds the permissions.
+  - A step that sets inputs neither action passes on, such as `version-script`,
+    `cwd`, `pr-draft`, `create-github-releases` or `push-git-tags`, keeps
+    `changesets/action` for now.
+  - **`build-script` replaces the build half of the old `publish-script`**, such
+    as `pnpm build` for a `pnpm release` of `pnpm build && changeset publish`;
+    `changesets/action/publish` runs the publish.
 
   ```yaml
-  release:
+  plan:
     if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      next: ${{ steps.pack.outputs.next }}
+      pack-dir-artifact-id: ${{ steps.pack.outputs.pack-dir-artifact-id }}
+    steps:
+      - uses: actions/checkout@<sha> # v7.0.1
+        with:
+          fetch-tags: true
+          persist-credentials: false
+
+      - uses: jjloneman/jj-kit/actions/setup@<sha> # setup@<version>
+
+      - id: pack
+        uses: jjloneman/jj-kit/actions/pack-release@<sha> # pack-release@<version>
+        with:
+          build-script: pnpm build
+
+  release:
+    needs: plan
+    if: ${{ needs.plan.outputs.next != 'none' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -202,13 +227,25 @@ verified: { by: human:jjloneman, at: 2026-11-26T19:29:41Z }
           persist-credentials: false
 
       - uses: jjloneman/jj-kit/actions/setup@<sha> # setup@<version>
+
       - uses: jjloneman/jj-kit/actions/version-or-release@<sha> # version-or-release@<version>
         with:
           assignee: <login>
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          publish-script: pnpm release
+          next: ${{ needs.plan.outputs.next }}
+          pack-dir-artifact-id: ${{ needs.plan.outputs.pack-dir-artifact-id }}
   ```
 
+- **Give the plan job no write permission**: its build runs every dev
+  dependency's code (see
+  [Why the release builds without write access](../decisions/unprivileged-release-build.md)).
+- **Fetch the tags in the plan job's checkout**, with `fetch-tags: true`.
+  - Without them, Changesets asks `git ls-remote`, which fails in a private repo
+    once `persist-credentials` is off, so every private package looks untagged
+    and each run tries to tag it again.
+- **Pass `build-script` whenever anything publishes to npm**, or `"true"` when
+  nothing needs building; left empty, `pack-release` fails rather than publish
+  packages without their build output.
 - **Drop any manual recovery for a merge that published nothing**: the next run
   with no releasing changeset pending publishes it.
 - **The repo allows GitHub Actions to create pull requests**, in Settings →

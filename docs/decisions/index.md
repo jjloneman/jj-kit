@@ -58,10 +58,10 @@ okf_version: "0.2"
   no Changesets `fixed` or `linked` groups, so a breaking change in one package
   never forces a major release of the others.
 - [Why empty changesets don't block a publish](publish-past-empty-changesets.md) -
-  `version-or-release` sets aside the pending changesets for one run when every
-  one of them is empty, so `changesets/action` takes its publish path and
-  publishes any version npm doesn't have yet, rather than waiting for the next
-  version PR's merge.
+  `pack-release` publishes whenever no releasing changeset is pending and
+  `changeset publish-plan` lists a version npm or the git tags lack, empty
+  changesets or not, so a release never waits on the next version PR's merge;
+  `changesets/action/publish` never reads the pending changesets.
 - [Why every PR adds a changeset](changeset-every-pr.md) - CI's required
   `🦋 Changeset` check fails a PR whose `changeset status --output` lists no
   changeset, since `changeset status` alone passes any PR that changes no
@@ -74,6 +74,11 @@ okf_version: "0.2"
   `engines.node >=26`, and CI runs Node 26 alone with no version matrix; a
   consumer whose own published code supports older Node keeps that support, but
   runs its tooling, the kit included, on Node 26.
+- [Why the release builds without write access](unprivileged-release-build.md) -
+  `release.yml` builds and packs in a job with `contents: read` alone, through
+  `pack-release` and `changesets/action/pack`, and only a second job, which
+  installs but never builds, holds `contents: write`, `pull-requests: write` and
+  `id-token: write` to open the version PR or publish the packed tarballs.
 
 # About this bundle
 
@@ -200,6 +205,7 @@ verified: { by: human:jjloneman, at: 2026-11-25T13:00:00Z }
 - `setup-action`: The action that installs pnpm, Node and dependencies.
 - `shell`: Shell scripts and running commands through a shell.
 - `status`: A record's `status` lifecycle.
+- `supply-chain`: What third-party code can reach, and with which credentials.
 - `tags`: How a record's `tags` are written.
 - `testing`: Tests and the coverage gate.
 - `tsdown`: tsdown, which builds each package.

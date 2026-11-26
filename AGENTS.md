@@ -24,18 +24,21 @@
 - `actions/<name>/` — one composite GitHub Action each, with its `action.yml`
   and a private `package.json`, so Changesets versions, changelogs and tags it
   (see [How the actions are versioned](docs/decisions/action-versions.md)).
+  - `pack-release/` — decides whether a release run versions, publishes or does
+    nothing, and builds and packs it without write access.
   - `require-changeset/` — fails a PR that adds no changeset.
   - `setup/` — installs pnpm, Node and the frozen-lockfile dependency tree; the
     prelude every CI job shares, with no code of its own.
-  - `version-or-release/` — keeps the version PR open, or publishes.
+  - `version-or-release/` — keeps the version PR open, or publishes what
+    `pack-release` packed, with no code of its own.
   - `lib/` — code the two TypeScript actions share, such as annotations, reading
     the release plan and the Node check; not an action.
     - The actions import it by relative path (`../../lib/src/…`), since a
       consumer's runner has the whole repo at the pinned SHA but no
       `node_modules`.
-    - `require-changeset` and `version-or-release` each depend on it as
-      `workspace:*`, so a release of `lib` also releases both; `setup` doesn't
-      use it.
+    - `pack-release` and `require-changeset` each depend on it as `workspace:*`,
+      so a release of `lib` also releases both; `setup` and `version-or-release`
+      don't use it.
   - An action with logic of its own keeps it as zero-dependency TypeScript in
     its `src/`, with its own `tsconfig.json`, which Node runs unbuilt under type
     stripping, so it keeps `.ts` import specifiers.
@@ -289,9 +292,14 @@
       without one.
     - It reads `pnpm-workspace.yaml` through `yq` v4, which GitHub's Ubuntu
       runners ship.
-- `release.yml` runs on every push to `main`, through the kit's own
-  [version-or-release](actions/version-or-release/action.yml) action, and by
-  hand from "Run workflow" (see below).
+- `release.yml` runs on every push to `main`, and by hand from "Run workflow"
+  (see below), in two jobs:
+  - `📦 Plan and pack`, with `contents: read` alone, runs the kit's own
+    [pack-release](actions/pack-release/action.yml) action, which decides,
+    builds and packs;
+  - `🦋 Version PR or publish`, holding the write permissions, runs
+    [version-or-release](actions/version-or-release/action.yml) only while
+    there's something to do, with no build.
 - **jj-kit uses its actions by local path** (`./actions/<name>`), so a PR's CI
   runs the actions as that PR changes them.
 - **Every action is pinned to an exact `vX.Y.Z`.**
@@ -303,9 +311,8 @@
   [.github/rulesets/main.json](.github/rulesets/main.json), by its display name.
   - Renaming one, or adding one, means updating `required_status_checks` there
     and reapplying the ruleset.
-  - **Never require `release.yml`'s `🦋 Version PR or publish`:** it runs only
-    on `main`, so it never reports on a PR, and every PR would wait on it
-    forever.
+  - **Never require `release.yml`'s jobs:** they run only on `main`, so they
+    never report on a PR, and every PR would wait on them forever.
   - **Reapply only after the new job has reported once on the PR**, or every PR
     waits on a check that never reports.
 
@@ -357,9 +364,9 @@
   - See [How changelog lines are built](docs/decisions/changelog-format.md).
 - **Empty changesets never release.**
   - `release.yml` opens no version PR while every pending changeset is empty.
-  - Instead, `version-or-release` sets the empty ones aside for that run, so it
-    publishes any version npm doesn't have yet; with nothing to publish, it ends
-    green.
+  - Instead, `pack-release` publishes past them whenever
+    `changeset publish-plan` lists a version npm or the git tags lack; with
+    nothing listed, it builds nothing and ends green.
   - The next real one's version PR deletes them all.
 - **`release.yml` keeps a rolling `chore(release): 🚀 version packages` PR
   open** while changesets are pending, labeled `🚀 release` and assigned to
@@ -384,8 +391,8 @@
     Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
     ```
 
-  - The run on that merge runs `pnpm release`
-    (`pnpm build && changeset publish`).
+  - The run on that merge builds with `pnpm build` and packs in the plan job,
+    then publishes the packed tarballs from the release job.
   - That publishes every package version npm doesn't have yet, and tags each as
     `<name>@<version>`, such as `@jjloneman/kit-tsconfig@1.0.0`.
   - Each action is tagged the same way, such as `require-changeset@1.0.0`, with
@@ -397,7 +404,7 @@
   - **Never use "Re-run jobs" on an old run:** it acts on that run's commit, so
     it could publish from a stale commit or rebuild the version PR without later
     changes.
-- **A red `🦋 Version PR or publish` run on a docs or CI merge means a version
+- **A red `🦋 Version PR or publish` job on a docs or CI merge means a version
   is waiting to publish** and its publish failed, usually a new package's first
   version whose trusted publisher isn't set up yet.
   - Each push to `main` with only empty changesets retries it, so it stays red

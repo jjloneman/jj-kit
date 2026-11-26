@@ -32,6 +32,7 @@ repo inherits
   - [kit-git-hooks](#kit-git-hooks)
 - [🎬 Actions](#-actions)
   - [require-changeset](#require-changeset)
+  - [pack-release](#pack-release)
   - [version-or-release](#version-or-release)
   - [setup](#setup)
 - [📚 Design decisions](#-design-decisions)
@@ -80,8 +81,8 @@ repo inherits
 
 - Composite actions, referenced as `jjloneman/jj-kit/actions/<name>`.
 - Each has its own version, `CHANGELOG.md` and `<name>@<version>` tag.
-- `require-changeset` and `version-or-release` share code from `actions/lib`,
-  which isn't an action; a release of it releases both.
+- `require-changeset` and `pack-release` share code from `actions/lib`, which
+  isn't an action; a release of it releases both.
 - **Pin each by full commit SHA, with its tag in a comment:**
 
   ```yaml
@@ -129,33 +130,60 @@ repo inherits
 | `skip-branches`      | none                  | Newline-separated globs of head branches that skip the check                       |
 | `version-pr-authors` | `github-actions[bot]` | Newline-separated logins whose `changeset-release/<base>` PR is the version PR     |
 
+### pack-release
+
+- Decides what a release run does, in a job **without write access**, since the
+  build runs every dev dependency's code:
+  - `version` while a releasing changeset is pending;
+  - `publish` when `changeset publish-plan` lists a version npm or the git tags
+    lack, even with empty changesets pending;
+  - `none` when the plan is empty, so a docs-only merge builds nothing.
+- **Holds back each version at `0.0.0`**, and each package that depends on one,
+  with a notice naming them, so nothing is published or tagged before its first
+  version PR; the rest still publish.
+- **When publishing**, runs `build-script` if anything goes to npm, then uploads
+  the checked plan and packs and uploads the release through
+  `changesets/action/pack`.
+  - It fails when something goes to npm and `build-script` is empty, rather than
+    publish packages without their build output.
+- **Needs** a job with no write permissions, a Linux or macOS runner, and
+  `@changesets/cli` 3 or later.
+
+| Input          | Default                            | What it does                                                                  |
+| -------------- | ---------------------------------- | ----------------------------------------------------------------------------- |
+| `build-script` | none, which fails a publish to npm | The command that builds before packing, or `true` when nothing needs building |
+
+- **Outputs** `next`, and `pack-dir-artifact-id` when publishing, for
+  `version-or-release`.
+
 ### version-or-release
 
-- Wraps `changesets/action`: keeps the rolling version PR open while changesets
-  are pending, then labels and assigns it.
-- **Publishes whenever no releasing changeset is pending**, so a version PR's
-  merge still publishes with an empty changeset left on `main`.
-  - It waits while a package it would release is still at `0.0.0`, so nothing is
-    published or tagged at `0.0.0`.
+- Runs in the job after `pack-release`'s, only while its `next` isn't `none`:
+  - `version` keeps the rolling version PR open through
+    `changesets/action/version`, then labels and assigns it;
+  - `publish` publishes the uploaded pack through `changesets/action/publish`,
+    which also pushes the tags and creates the GitHub releases, and never reads
+    the pending changesets, so empty ones left on `main` don't stop it.
 - **Needs** a push to the release branch, `contents: write`,
-  `pull-requests: write`, `id-token: write` for npm trusted publishing, a Linux
-  or macOS runner, and the label in the repo.
+  `pull-requests: write`, `id-token: write` for npm trusted publishing, and the
+  label in the repo.
 - With `GITHUB_TOKEN`, the repo turns on "Allow GitHub Actions to create and
   approve pull requests", and the version PR's CI run waits for an approval
   click (see
   [Which token opens the version PR](docs/decisions/version-pr-token.md)).
 
-| Input            | Default                               | What it does                                |
-| ---------------- | ------------------------------------- | ------------------------------------------- |
-| `assignee`       | none                                  | The login to assign the version PR to       |
-| `commit-message` | `chore(release): 🚀 version packages` | The version PR's commit message             |
-| `github-token`   | required                              | The token that opens the PR and pushes tags |
-| `label`          | `🚀 release`                          | The label to add to the version PR          |
-| `pr-title`       | `chore(release): 🚀 version packages` | The version PR's title                      |
-| `publish-script` | none, which never publishes           | The command that builds and publishes       |
+| Input                  | Default                               | What it does                                    |
+| ---------------------- | ------------------------------------- | ----------------------------------------------- |
+| `assignee`             | none                                  | The login to assign the version PR to           |
+| `commit-message`       | `chore(release): 🚀 version packages` | The version PR's commit message                 |
+| `github-token`         | required                              | The token that opens the PR and pushes tags     |
+| `label`                | `🚀 release`                          | The label to add to the version PR              |
+| `next`                 | required                              | `pack-release`'s `next`: `version` or `publish` |
+| `pack-dir-artifact-id` | none                                  | `pack-release`'s artifact id, for `publish`     |
+| `pr-title`             | `chore(release): 🚀 version packages` | The version PR's title                          |
 
 - **Outputs** `pr-number`, `published` and `published-packages`, passed through
-  from `changesets/action`.
+  from `changesets/action`'s sub-actions.
 
 ### setup
 

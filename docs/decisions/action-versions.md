@@ -28,8 +28,8 @@ sources:
   - id: renovate-regex
     resource: https://docs.renovatebot.com/modules/manager/regex/
     title: Renovate, the regex custom manager
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T19:09:51Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T21:37:48Z }
 verified: { by: human:jjloneman, at: 2026-11-26T19:29:41Z }
 ---
 
@@ -59,11 +59,11 @@ verified: { by: human:jjloneman, at: 2026-11-26T19:29:41Z }
     wouldn't say which action it is.
 - **Code the actions share lives in `actions/lib`**, a private package that
   isn't an action, which they import by relative path.
-  - Each action that uses it, `require-changeset` and `version-or-release`,
-    depends on it as `workspace:*`, so a release of `lib` also patch-releases
-    both, whose behavior it changes.
-  - `setup`, which runs no code of its own, doesn't depend on it, so a `lib`
-    release leaves it alone.
+  - Each action that uses it, `pack-release` and `require-changeset`, depends on
+    it as `workspace:*`, so a release of `lib` also patch-releases both, whose
+    behavior it changes.
+  - `setup` and `version-or-release`, which run no code of their own, don't
+    depend on it, so a `lib` release leaves them alone (#23).
   - `lib` is tagged `actions-lib@<version>` like the actions, though nothing
     pins it.
   - **Rejected: importing one action's code from the other**, which would change
@@ -111,6 +111,7 @@ verified: { by: human:jjloneman, at: 2026-11-26T19:29:41Z }
 ## Links
 
 - #5, which built the actions and settled this.
+- #23, which added `pack-release` and left `version-or-release` with no code.
 
 [^changesets-config]:
     `privatePackages.version` versions and changelogs private packages, and

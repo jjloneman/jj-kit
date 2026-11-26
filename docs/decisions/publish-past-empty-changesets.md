@@ -24,9 +24,9 @@ sources:
   - id: changesets-action-select-mode
     resource: https://github.com/changesets/action/blob/v2.1.2/src/select-mode/index.ts
     title: changesets/action v2.1.2, src/select-mode/index.ts
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T22:22:22Z }
-verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
+verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
 ---
 
 # Why empty changesets don't block a publish

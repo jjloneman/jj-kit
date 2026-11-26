@@ -27,8 +27,9 @@ sources:
   - id: id-token
     resource: https://docs.github.com/en/actions/concepts/security/openid-connect
     title: GitHub Docs, OpenID Connect
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T22:04:04Z }
+verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
 ---
 
 # Why the release builds without write access

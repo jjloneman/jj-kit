@@ -50,12 +50,12 @@ runs:
   steps:
     # The scripts are TypeScript that Node runs under type stripping, so an
     # older default Node on the runner fails with a clear message instead.
-    - name: Check Node
+    - name: 🔍 Check Node
       shell: bash
       run: bash "$GITHUB_ACTION_PATH/../lib/check-node.sh" require-changeset
 
     # Every value goes through `env`, so a branch name can't inject shell.
-    - name: Check for a changeset
+    - name: 🦋 Check for a changeset
       env:
         BASE: ${{ inputs.base }}
         HEAD_REF: ${{ github.head_ref }}

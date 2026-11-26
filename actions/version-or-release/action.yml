@@ -74,16 +74,18 @@ runs:
     #
     # - It's TypeScript that Node runs under type stripping, so an older
     #   default Node on the runner fails with a clear message instead.
-    - name: Check Node
+    - name: 🔍 Check Node
       if: ${{ inputs.publish-script != '' }}
       shell: bash
       run: bash "$GITHUB_ACTION_PATH/../lib/check-node.sh" version-or-release
-    - name: Set aside empty changesets
+
+    - name: 🧺 Set aside empty changesets
       if: ${{ inputs.publish-script != '' }}
       shell: bash
       run: node "$GITHUB_ACTION_PATH/src/index.ts"
 
-    - id: changesets
+    - name: 🦋 Version PR or publish
+      id: changesets
       uses: changesets/action@v2.1.2
       with:
         commit-message: ${{ inputs.commit-message }}
@@ -92,7 +94,7 @@ runs:
         publish-script: ${{ inputs.publish-script }}
 
     # changesets/action has no assignee or label option, so add them here.
-    - name: Label and assign the version PR
+    - name: 🏷️ Label and assign the version PR
       if: >-
         ${{ steps.changesets.outputs.pr-number != '' && (inputs.assignee != ''
         || inputs.label != '') }}

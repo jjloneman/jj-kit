@@ -10,6 +10,7 @@ import { main } from "./main.ts";
 import { NO_CHANGESET_ERROR, statusFailureHint } from "./status.ts";
 
 vi.mock(import("node:child_process"), () => ({ execFileSync: vi.fn() }));
+
 vi.mock(import("node:fs"), () => ({
   mkdtempSync: vi.fn(),
   readFileSync: vi.fn(),
@@ -171,6 +172,7 @@ describe("main", () => {
 
     // Then - it fails with the reason.
     expect(code).toBe(1);
+
     expect(printed()).toStrictEqual([
       "::error::require-changeset runs on pull_request events only, where " +
         "the base and head branches are known.",
@@ -243,6 +245,7 @@ describe("main", () => {
     // Then - it passes, having diffed against the base branch.
     expect(code).toBe(0);
     expect(printed()).toStrictEqual(["This PR adds a changeset."]);
+
     expect(execFileSync).toHaveBeenCalledWith(
       "pnpm",
       [
@@ -274,6 +277,7 @@ describe("main", () => {
 
     // Then - the plan goes under the OS temp folder.
     expect(code).toBe(0);
+
     expect(mkdtempSync).toHaveBeenCalledWith(
       path.join(tmpdir(), "changeset-status-")
     );
@@ -310,6 +314,7 @@ describe("main", () => {
       "packages/a/package.json": manifest("^4.0.0"),
       "pnpm-workspace.yaml": WORKSPACE,
     };
+
     fake({
       changed: ["pnpm-lock.yaml"],
       files: { "base-sha": files, HEAD: files },
@@ -320,6 +325,7 @@ describe("main", () => {
 
     // Then - it passes without asking for a changeset.
     expect(code).toBe(0);
+
     expect(printed()).toStrictEqual([
       "::notice::Skipped: this Renovate PR changes no package's " +
         "dependencies, peer or optional dependencies, or engines, and no " +
@@ -333,6 +339,7 @@ describe("main", () => {
       "package.json": JSON.stringify({ private: true }),
       "pnpm-workspace.yaml": "",
     };
+
     fake({
       changed: ["pnpm-lock.yaml"],
       files: { "base-sha": files, HEAD: files },
@@ -352,6 +359,7 @@ describe("main", () => {
       "packages/a/package.json": JSON.stringify({ name: "app", private: true }),
       "pnpm-workspace.yaml": WORKSPACE,
     };
+
     fake({
       changed: ["packages/a/src/index.ts"],
       files: { "base-sha": files, HEAD: files },
@@ -399,6 +407,7 @@ describe("main", () => {
       "packages/a/package.json": manifest("^4.0.0"),
       "pnpm-workspace.yaml": WORKSPACE,
     };
+
     fake({
       changed: ["packages/a/package.json"],
       files: {

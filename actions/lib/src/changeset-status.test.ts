@@ -5,6 +5,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { checkChangesetsCli, runChangesetStatus } from "./changeset-status.ts";
 
 vi.mock(import("node:child_process"), () => ({ execFileSync: vi.fn() }));
+
 vi.mock(import("node:fs"), () => ({
   mkdtempSync: vi.fn(),
   readFileSync: vi.fn(),
@@ -26,6 +27,7 @@ function fakeChangeset({
   version?: string;
 }): void {
   vi.mocked(mkdtempSync).mockImplementation((prefix) => `${prefix}abc`);
+
   vi.mocked(execFileSync).mockImplementation((_command, args = []) => {
     if (args.includes("--version")) {
       return `${version}\n`;
@@ -68,10 +70,12 @@ describe("runChangesetStatus", () => {
     // Then - it ran with the right flags, the plan comes back, and the temp
     // folder is gone.
     expect(plan).toStrictEqual(PLAN);
+
     expect(rmSync).toHaveBeenCalledWith("/runner/temp/changeset-status-abc", {
       force: true,
       recursive: true,
     });
+
     expect(execFileSync).toHaveBeenCalledWith(
       "pnpm",
       [

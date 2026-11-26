@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { main } from "./main.ts";
 
 vi.mock(import("node:child_process"), () => ({ execFileSync: vi.fn() }));
+
 vi.mock(import("node:fs"), () => ({
   existsSync: vi.fn(),
   mkdtempSync: vi.fn(),
@@ -46,11 +47,13 @@ function fake(fakes: Fakes): void {
   vi.mocked(existsSync).mockReturnValue(config !== undefined);
   vi.mocked(realpathSync).mockReturnValue("/repo");
   vi.mocked(mkdtempSync).mockImplementation((prefix) => `${prefix}abc`);
+
   vi.mocked(readFileSync).mockImplementation((file) =>
     file === ".changeset/config.json"
       ? (config ?? "")
       : JSON.stringify({ changesets, releases: [] })
   );
+
   vi.mocked(execFileSync).mockImplementation((_command, args = []) => {
     if (args.includes("--version")) {
       return "3.0.3\n";
@@ -94,6 +97,7 @@ describe("main", () => {
 
     // Then - both are deleted from the checkout, and it says why.
     expect(code).toBe(0);
+
     expect(
       vi
         .mocked(rmSync)
@@ -102,10 +106,12 @@ describe("main", () => {
       [path.join(".changeset", "empty-one.md")],
       [path.join(".changeset", "empty-two.md")],
     ]);
+
     expect(printed()).toStrictEqual([
       "::notice::Every pending changeset is empty, so this run publishes " +
         "anything npm doesn't have yet.",
     ]);
+
     expect(execFileSync).toHaveBeenCalledWith(
       "pnpm",
       [
@@ -127,12 +133,15 @@ describe("main", () => {
 
     // Then - nothing is deleted, and the plan goes under the OS temp folder.
     expect(code).toBe(0);
+
     expect(rmSync).not.toHaveBeenCalledWith(
       expect.stringMatching(/^\.changeset/u)
     );
+
     expect(printed()).toStrictEqual([
       "A pending changeset releases a package, so it waits for the version PR.",
     ]);
+
     expect(mkdtempSync).toHaveBeenCalledWith(
       path.join(tmpdir(), "changeset-status-")
     );
@@ -147,9 +156,11 @@ describe("main", () => {
 
     // Then - it passes, so changesets/action still runs.
     expect(code).toBe(0);
+
     expect(rmSync).not.toHaveBeenCalledWith(
       expect.stringMatching(/^\.changeset/u)
     );
+
     expect(printed()).toStrictEqual([
       "::warning::Couldn't read the pending changesets, so they're left as " +
         "they are: changeset status failed; see its output above.",
@@ -160,6 +171,7 @@ describe("main", () => {
     // Given - a temp folder that throws something odd.
     fake({ changesets: [] });
     const odd: unknown = "odd\nthrow";
+
     vi.mocked(mkdtempSync).mockImplementation(() => {
       throw odd;
     });
@@ -169,6 +181,7 @@ describe("main", () => {
 
     // Then - it warns with the escaped value, and passes.
     expect(code).toBe(0);
+
     expect(printed()).toStrictEqual([
       "::warning::Couldn't read the pending changesets, so they're left as " +
         "they are: odd%0Athrow",
@@ -185,6 +198,7 @@ describe("main", () => {
 
     // Then - it fails, as the docs promise, without reading anything.
     expect(code).toBe(1);
+
     expect(printed()).toStrictEqual([
       "::error::The kit's actions need @changesets/cli 3 or later, but found " +
         "2.29.1.",
@@ -194,6 +208,7 @@ describe("main", () => {
   test("fails when deleting a changeset throws", () => {
     // Given - an empty changeset that can't be deleted.
     fake({ changesets: [{ id: "empty-one", releases: [] }] });
+
     vi.mocked(rmSync).mockImplementation((file) => {
       if (String(file).startsWith(".changeset")) {
         throw new Error("permission denied");

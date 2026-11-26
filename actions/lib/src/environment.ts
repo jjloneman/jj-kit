@@ -4,8 +4,10 @@ import { tmpdir } from "node:os";
 export type Environment = Readonly<Record<string, string | undefined>>;
 
 /**
- * The largest output a command may print, in bytes; `git ls-tree` on a big
- * repo outgrows Node's 1 MiB default.
+ * The largest output a command may print: 64 MiB, or 67,108,864 bytes.
+ *
+ * - Node's own default is 1 MiB (1,048,576 bytes), which `git ls-tree` on a
+ *   big repo outgrows.
  */
 export const MAX_BUFFER: number = 64 * 1024 * 1024;
 

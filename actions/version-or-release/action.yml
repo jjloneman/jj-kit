@@ -1,9 +1,13 @@
 name: 🦋 Version PR or release
 description: >-
   Keeps the rolling Changesets version PR open, labeled and assigned, while
-  changesets are pending, and publishes once it merges.
+  changesets are pending, and publishes the release `pack-release` packed once
+  it merges.
 
 # Needs, from the caller:
+#
+# - a job that runs after `pack-release`'s, with `needs:` on it, and only
+#   while its `next` output isn't `none`;
 #
 # - a push to the release branch, with `contents: write` and
 #   `pull-requests: write`, plus `id-token: write` for npm trusted publishing;
@@ -12,10 +16,9 @@ description: >-
 #   repo's Actions settings, when `github-token` is `GITHUB_TOKEN`;
 #
 # - a checkout, and Node 26 and pnpm with the workspace installed,
-#   `@changesets/cli` 3 or later included, from the caller's own setup step;
-#
-# - a Linux or macOS runner, since the script runs `pnpm` without a shell,
-#   which fails on Windows;
+#   `@changesets/cli` 3 or later included, usually from
+#   `jjloneman/jj-kit/actions/setup`, though a consumer may keep its own setup
+#   step;
 #
 # - the `label` in the repo, or the step that labels the version PR fails.
 inputs:
@@ -35,74 +38,84 @@ inputs:
     description: >-
       The label to add to the version PR, which must exist in the repo; empty
       adds none.
+  next:
+    description: >-
+      `pack-release`'s `next` output: `version` to open or update the version
+      PR, or `publish` to publish its pack.
+    required: true
+  pack-dir-artifact-id:
+    default: ""
+    description: >-
+      `pack-release`'s `pack-dir-artifact-id` output, the pack to publish when
+      `next` is `publish`.
   pr-title:
     default: "chore(release): 🚀 version packages"
     description: The version PR's title.
-  publish-script:
-    default: ""
-    description: >-
-      The command that builds and publishes, such as `pnpm release`; empty
-      never publishes.
 
 outputs:
   pr-number:
     description: The version PR's number, when one was opened or updated.
-    value: ${{ steps.changesets.outputs.pr-number }}
+    value: ${{ steps.version.outputs.pr-number }}
   published:
     description: '"true" when packages were published, else "false".'
-    value: ${{ steps.changesets.outputs.published }}
+    value: ${{ steps.publish.outputs.published || 'false' }}
   published-packages:
     description: >-
       A JSON array of the published packages, such as `[{"name": "a",
       "version": "1.0.0"}]`.
-    value: ${{ steps.changesets.outputs.published-packages }}
+    value: ${{ steps.publish.outputs.published-packages || '[]' }}
 
 runs:
   using: composite
   steps:
-    # changesets/action neither opens a version PR nor publishes while every
-    # pending changeset is empty, so a version PR's merge with an empty one
-    # left on `main`, or a run that was cancelled, would publish nothing.
-    #
-    # - The script deletes the empty ones from this run's checkout, which
-    #   sends it down the publish path; nothing is committed, and the next
-    #   version PR deletes them for good.
-    #
-    # - It leaves them alone while a package the publish would release is
-    #   still at 0.0.0, a public one or a tagged private one, or when it can't
-    #   read them, so changesets/action runs as usual.
-    #
-    # - It's TypeScript that Node runs under type stripping, so an older
-    #   default Node on the runner fails with a clear message instead.
-    - name: 🔍 Check Node
-      if: ${{ inputs.publish-script != '' }}
+    # A typo, or a job that runs on `none`, would otherwise skip both steps
+    # below and pass without a word.
+    - name: 🔍 Check the inputs
+      env:
+        NEXT: ${{ inputs.next }}
+        PACK_DIR_ARTIFACT_ID: ${{ inputs.pack-dir-artifact-id }}
       shell: bash
-      run: bash "$GITHUB_ACTION_PATH/../lib/check-node.sh" version-or-release
+      run: |
+        if [ "$NEXT" != version ] && [ "$NEXT" != publish ]; then
+          echo "::error::next must be \"version\" or \"publish\", from" \
+            "pack-release, but was \"$NEXT\"."
+          exit 1
+        fi
+        if [ "$NEXT" = publish ] && [ -z "$PACK_DIR_ARTIFACT_ID" ]; then
+          echo "::error::pack-dir-artifact-id is empty, so there's no pack" \
+            "to publish."
+          exit 1
+        fi
 
-    - name: 🧺 Set aside empty changesets
-      if: ${{ inputs.publish-script != '' }}
-      shell: bash
-      run: node "$GITHUB_ACTION_PATH/src/index.ts"
-
-    - name: 🦋 Version PR or publish
-      id: changesets
-      uses: changesets/action@v2.1.2
+    - name: 🦋 Open or update the version PR
+      id: version
+      if: ${{ inputs.next == 'version' }}
+      uses: changesets/action/version@v2.1.2
       with:
         commit-message: ${{ inputs.commit-message }}
         github-token: ${{ inputs.github-token }}
         pr-title: ${{ inputs.pr-title }}
-        publish-script: ${{ inputs.publish-script }}
+
+    # The publish sub-action never reads the pending changesets, so empty ones
+    # left on `main` don't stop it.
+    - name: 🚀 Publish
+      id: publish
+      if: ${{ inputs.next == 'publish' }}
+      uses: changesets/action/publish@v2.1.2
+      with:
+        github-token: ${{ inputs.github-token }}
+        pack-dir-artifact-id: ${{ inputs.pack-dir-artifact-id }}
 
     # changesets/action has no assignee or label option, so add them here.
     - name: 🏷️ Label and assign the version PR
       if: >-
-        ${{ steps.changesets.outputs.pr-number != '' && (inputs.assignee != ''
+        ${{ steps.version.outputs.pr-number != '' && (inputs.assignee != ''
         || inputs.label != '') }}
       env:
         ASSIGNEE: ${{ inputs.assignee }}
         GH_TOKEN: ${{ inputs.github-token }}
         LABEL: ${{ inputs.label }}
-        PR_NUMBER: ${{ steps.changesets.outputs.pr-number }}
+        PR_NUMBER: ${{ steps.version.outputs.pr-number }}
       shell: bash
       run: |
         args=()

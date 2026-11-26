@@ -21,7 +21,7 @@ tags:
   - renovate
   - version-pr
 status: draft
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T04:26:32Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T05:03:12Z }
 verified: { by: human:jjloneman, at: 2026-11-26T01:05:37Z }
 ---
 
@@ -134,6 +134,7 @@ verified: { by: human:jjloneman, at: 2026-11-26T01:05:37Z }
         with:
           fetch-depth: 0
           persist-credentials: false
+
       # Your setup step: pnpm, Node 26 and `pnpm install`.
       - uses: jjloneman/jj-kit/actions/require-changeset@<sha> # require-changeset@<version>
   ```
@@ -172,6 +173,7 @@ verified: { by: human:jjloneman, at: 2026-11-26T01:05:37Z }
       - uses: actions/checkout@<sha> # v7.0.1
         with:
           persist-credentials: false
+
       # Your setup step: pnpm, Node 26 and `pnpm install`.
       - uses: jjloneman/jj-kit/actions/version-or-release@<sha> # version-or-release@<version>
         with:

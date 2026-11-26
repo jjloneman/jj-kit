@@ -20,9 +20,9 @@ tags:
   - releases
   - renovate
   - version-pr
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T05:03:12Z }
-verified: { by: human:jjloneman, at: 2026-11-26T01:05:37Z }
+verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
 ---
 
 # Consuming the kit

@@ -18,8 +18,9 @@ sources:
   - id: changesets-action
     resource: https://github.com/changesets/action/blob/v2.1.2/src/index.ts
     title: changesets/action v2.1.2, src/index.ts
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T04:26:32Z }
+verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
 ---
 
 # Why empty changesets don't block a publish

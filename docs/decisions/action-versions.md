@@ -27,8 +27,9 @@ sources:
   - id: renovate-regex
     resource: https://docs.renovatebot.com/modules/manager/regex/
     title: Renovate, the regex custom manager
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T03:14:24Z }
+verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
 ---
 
 # How the actions are versioned

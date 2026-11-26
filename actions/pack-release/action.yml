@@ -1,0 +1,97 @@
+name: 📦 Pack release
+description: >-
+  Decides whether a release run opens the version PR, publishes or does
+  nothing, and when it publishes, builds and packs the release in a job
+  without write access, uploading the tarballs for the job that publishes.
+
+# Needs, from the caller:
+#
+# - a job with no write permissions, such as `contents: read` alone, since
+#   the build runs every dev dependency's code; the job that publishes runs
+#   `version-or-release` after it, with `needs:` on this job;
+#
+# - a checkout, and Node 26 and pnpm with the workspace installed,
+#   `@changesets/cli` 3 or later included, usually from
+#   `jjloneman/jj-kit/actions/setup`, though a consumer may keep its own setup
+#   step;
+#
+# - a Linux or macOS runner, since the script runs `pnpm` without a shell,
+#   which fails on Windows.
+inputs:
+  build-script:
+    default: ""
+    description: >-
+      The command that builds the packages before they're packed, such as
+      `pnpm build`, or `true` when they need no build; empty fails the run
+      when anything publishes to npm.
+
+outputs:
+  next:
+    description: >-
+      `version` to open or update the version PR, `publish` to publish the
+      uploaded pack, or `none` when there's nothing to do.
+    value: ${{ steps.decide.outputs.next }}
+  pack-dir-artifact-id:
+    description: >-
+      The uploaded pack's artifact id when `next` is `publish`, for
+      `version-or-release`'s `pack-dir-artifact-id`; empty otherwise.
+    value: ${{ steps.pack.outputs.pack-dir-artifact-id }}
+
+runs:
+  using: composite
+  steps:
+    # It's TypeScript that Node runs under type stripping, so an older default
+    # Node on the runner fails with a clear message instead.
+    - name: 🔍 Check Node
+      shell: bash
+      run: bash "$GITHUB_ACTION_PATH/../lib/check-node.sh" pack-release
+
+    - name: 🧭 Decide what to release
+      id: decide
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/src/index.ts"
+
+    # `pack` reads a plan only from an artifact, so the checked one goes up
+    # before the build, the first untrusted code to run.
+    - name: ⬆️ Upload the publish plan
+      id: plan
+      if: ${{ steps.decide.outputs.next == 'publish' }}
+      uses: actions/upload-artifact@v7.0.2
+      with:
+        if-no-files-found: error
+        name: changeset-publish-plan
+        path: ${{ steps.decide.outputs.plan-file }}
+        retention-days: 1
+
+    # A forgotten `build-script` would publish packages without their build
+    # output, which the old publish script, which built too, never could.
+    - name: 🔍 Check the build script
+      if: ${{ steps.decide.outputs.should-build == 'true' }}
+      env:
+        BUILD_SCRIPT: ${{ inputs.build-script }}
+      shell: bash
+      run: |
+        if [ -z "${BUILD_SCRIPT//[[:space:]]/}" ]; then
+          echo "::error title=pack-release::Something publishes to npm, but" \
+            "build-script is empty. Pass the build command, or \"true\" when" \
+            "the packages need no build."
+          exit 1
+        fi
+
+    # Stops on the first failing command, as a `run:` step does, so a failed
+    # build in a multi-command script never packs.
+    - name: 🛠️ Build
+      if: ${{ steps.decide.outputs.should-build == 'true' }}
+      env:
+        BUILD_SCRIPT: ${{ inputs.build-script }}
+      shell: bash
+      run: bash -eo pipefail -c "$BUILD_SCRIPT"
+
+    # A plan of tags alone packs no tarball, but still uploads the plan that
+    # `changesets/action/publish` reads.
+    - name: 📦 Pack and upload
+      id: pack
+      if: ${{ steps.decide.outputs.next == 'publish' }}
+      uses: changesets/action/pack@v2.1.2
+      with:
+        publish-plan-artifact-id: ${{ steps.plan.outputs.artifact-id }}

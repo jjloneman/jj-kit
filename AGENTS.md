@@ -24,6 +24,10 @@
 - `packages/<name>/` — one npm package each, with its own `package.json` and
   `tsconfig.json`, built with its own `tsdown.config.ts` unless it ships JSON
   only.
+  - `changesets-changelog/` — `@jjloneman/kit-changesets-changelog`, the gitmoji
+    changelog formatter, which jj-kit's own `.changeset/config.json` loads from
+    source.
+  - Each package's `tsconfig.json` is copied from okf-tools until #8.
 - `docs/decisions/` and `docs/references/` — the repo's own OKF bundles (see
   [Design decisions](#-design-decisions)).
 - `.changeset/` — pending changesets (see
@@ -63,6 +67,8 @@
 - **Named functions are `function` declarations**; arrows are for callbacks and
   closures.
 - **Braces always**, even around a one-line `if` body.
+- **An unused name keeps a `_` prefix** rather than being dropped, such as
+  `const [_file, args] = call`, so it still says what it is.
 - **Semantic names:**
   - module constants are `SCREAMING_SNAKE_CASE`;
   - boolean names read as questions, opening with an auxiliary verb (`is`,
@@ -91,6 +97,10 @@
 - **A doc comment on every function**, exported or not, with an `@returns` when
   it returns a value.
 - **Every property of a named type gets its own doc comment.**
+  - A doc comment that fits on one line within 80 columns, `@example` included,
+    is written on one line.
+- **A positional parameter gets an `@param` tag**, such as one an outside caller
+  forces.
 - **Document a destructured object parameter on its type literal's properties**,
   never with a dotted `@param options.key`.
   - An editor shows a property's comment at the call site, but nothing for a
@@ -200,12 +210,11 @@
   - Each package with a `package.json` is its own Vitest project.
 - **`pnpm test:coverage` adds the gate:** **100%** statements, branches,
   functions, and lines across `packages/*/src`.
-- **Until the first package lands, the suite passes with no tests.**
-  - Drop the `PACKAGE_DIRS.length` guard and `passWithNoTests` in
-    [vitest.config.ts](vitest.config.ts) when it does.
 - A branch nothing can reach is dead code to delete, not a line to exempt; no
   coverage-ignore comments.
 - **Test data is fabricated.** Never copy a real repo's files into a test.
+- **`vi.mock` takes `import("<module>")`, not the module's path as a string**,
+  so the factory's return is typed against the real module.
 - **Shape:** `describe("<unit>")` → `test("<scenario>")`.
   - `// Given` / `// When` / `// Then` comments, each followed by a hyphen and
     what that phase holds.
@@ -302,17 +311,18 @@
     `CHANGELOG.md`.
   - A PR that only touches tooling, tests, CI, or docs runs
     `pnpm changeset --empty`, which records no release.
-    - Until the first package lands, `--empty` refuses to run ("No packages
-      found").
-    - Write the file by hand instead: a `.changeset/<name>.md` holding only
-      `---` and `---`, which is all `--empty` writes.
   - **Name every package you want released.** A package that depends on another
     kit package is bumped on its own only when the new version falls outside the
     range it depends on.
     - `updateInternalDependencies: patch` only updates that range in a dependent
       that's already being released.
-- **Changelog lines come from the stock `@changesets/cli/changelog`** until #4
-  ships `@jjloneman/kit-changesets-changelog`.
+- **Changelog lines come from `@jjloneman/kit-changesets-changelog`**, loaded
+  from `packages/changesets-changelog/src/index.ts` under Node's type stripping,
+  so versioning needs no build first.
+  - Each line takes the gitmoji and scope of the PR title that added the
+    changeset, so a PR title that breaks the commit conventions loses them.
+  - The source must stay erasable syntax with `.ts` import specifiers.
+  - See [How changelog lines are built](docs/decisions/changelog-format.md).
 - **Empty changesets never release.**
   - `release.yml` skips the version PR while every pending changeset is empty.
   - The next real one's version PR deletes them all.

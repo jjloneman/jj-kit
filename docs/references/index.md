@@ -27,11 +27,23 @@ okf_version: "0.2"
 ## Tag vocabulary
 
 - `actions`: The kit's composite GitHub Actions.
+- `changelog`: Each package's `CHANGELOG.md`.
+- `changesets`: Changeset files, their config, and the `changeset` commands.
 - `ci`: CI jobs and required checks.
 - `consumers`: Repos that install the kit's packages or use its actions.
+- `dogfooding`: jj-kit using its own packages and actions.
+- `git-tags`: The git tags a release makes.
+- `kit-changesets-changelog`: The `@jjloneman/kit-changesets-changelog` package.
 - `layout`: Where things live in the repo.
 - `moratorium`: A repo's minimum release age for new dependency versions.
+- `node`: Node.js versions and features the kit relies on.
+- `npm`: The npm registry and package metadata.
 - `packages`: The kit's npm packages as a set.
 - `pinning`: How a consumer pins a package or action version.
+- `pull-requests`: What every pull request must carry.
 - `releases`: Versioning and publishing.
 - `renovate`: Renovate's dependency updates.
+- `testing`: Tests and the coverage gate.
+- `type-stripping`: Node running TypeScript by stripping its types.
+- `version-pr`: The rolling `chore(release): 🚀 version packages` PR.
+- `workspace`: The pnpm workspace and `workspace:*` dependencies.

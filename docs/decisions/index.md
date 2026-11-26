@@ -8,6 +8,11 @@ okf_version: "0.2"
   YAML block list, one `- tag` per line, sorted alphabetically, naming every
   specific subject the record covers, each from the bundle's tag vocabulary; not
   a one-line flow list.
+- [How changelog lines are built](changelog-format.md) -
+  `kit-changesets-changelog` prefixes each changeset's line with the gitmoji and
+  scope of the commit that added it, as okf-tools does, and adds one
+  `Updated dependencies` line per dependency release; it reads git from the
+  current directory, and jj-kit loads its source while consumers load `dist/`.
 - [How Markdown is wrapped](markdown-wrap.md) - Prettier wraps Markdown at 80
   columns, frontmatter included, through a `proseWrap` override for Markdown
   files only that leaves changesets unwrapped, so each summary reaches
@@ -131,6 +136,7 @@ verified: { by: human:jjloneman, at: 2026-11-25T13:00:00Z }
 - `changelog`: Each package's `CHANGELOG.md`.
 - `changesets`: Changeset files, their config, and the `changeset` commands.
 - `ci`: CI jobs and required checks.
+- `commits`: Commit subjects and the conventions they follow.
 - `compiler-options`: TypeScript compiler options.
 - `consumers`: Repos that install the kit's packages or use its actions.
 - `decisions`: The decisions bundle itself.
@@ -140,11 +146,14 @@ verified: { by: human:jjloneman, at: 2026-11-25T13:00:00Z }
 - `engines`: A package's `engines` field.
 - `formatting`: How formatters such as Prettier treat files.
 - `frontmatter`: A record's YAML frontmatter.
+- `git`: How the kit runs git and reads its output.
 - `git-hooks`: The `pre-commit` and `pre-push` hooks.
 - `git-tags`: The git tags a release makes.
 - `github-actions`: Workflows, their tokens, and how their runs start.
 - `github-app`: A GitHub App and the tokens it issues.
 - `github-token`: The workflow's own `GITHUB_TOKEN`.
+- `gitmoji`: The emoji after a commit subject's colon.
+- `kit-changesets-changelog`: The `@jjloneman/kit-changesets-changelog` package.
 - `kit-git-hooks`: The `@jjloneman/kit-git-hooks` package.
 - `kit-tsconfig`: The `@jjloneman/kit-tsconfig` package.
 - `libraries`: Published library code and its settings.
@@ -158,6 +167,7 @@ verified: { by: human:jjloneman, at: 2026-11-25T13:00:00Z }
 - `okf`: The Open Knowledge Format.
 - `okf-tools`: okf-tools and its `okf-verify` command.
 - `packages`: The kit's npm packages as a set.
+- `peer-dependencies`: A package's `peerDependencies` and their ranges.
 - `permissions`: Workflow and repo permissions.
 - `pnpm`: pnpm and its workspace settings.
 - `pre-commit`: The pre-commit hook.

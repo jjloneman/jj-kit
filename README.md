@@ -46,8 +46,11 @@ repo inherits
 
 ### kit-changesets-changelog
 
-- 🚧 Coming in #4: a Changesets changelog formatter that prefixes each line with
-  the gitmoji and scope of the squash commit that added it.
+- A Changesets changelog formatter that prefixes each line with the gitmoji and
+  scope of the commit that added the changeset, which after a squash merge is
+  the PR title.
+- Its [README](packages/changesets-changelog/README.md) has the line format, the
+  config line and a sample changelog.
 
 ### kit-eslint-config
 
@@ -123,8 +126,6 @@ pnpm check
   without one:
   - `pnpm changeset` for a change a package ships;
   - `pnpm changeset --empty` for one that releases nothing.
-  - Until the first package lands, write the empty one by hand, as
-    [.changeset/README.md](.changeset/README.md) says.
 - Each package lives in `packages/<name>` with its own `package.json` and
   `tsconfig.json`.
 - Shared dev dependency versions live in `pnpm-workspace.yaml`'s `catalog`;

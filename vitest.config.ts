@@ -10,10 +10,6 @@ import { defineConfig } from "vitest/config";
  * - Found by its `package.json`, so a leftover folder holding only
  *   gitignored `node_modules` or `dist` after a branch switch isn't mistaken
  *   for a package.
- *
- * - Vitest refuses to start when `projects` matches nothing, so the list is
- *   only set once there's a package to match. Drop that guard, and
- *   `passWithNoTests`, once the first package ships its tests.
  */
 const PACKAGE_DIRS: string[] = globSync("packages/*/package.json", {
   cwd: import.meta.dirname,
@@ -50,11 +46,10 @@ const CONFIG: ViteUserConfig = defineConfig({
       ],
       thresholds: { 100: true },
     },
-    passWithNoTests: true,
 
     // Each package is its own Vitest project, configured by its own
     // `vitest.config.ts` when it needs more than the defaults.
-    ...(PACKAGE_DIRS.length > 0 ? { projects: PACKAGE_DIRS } : {}),
+    projects: PACKAGE_DIRS,
   },
 });
 

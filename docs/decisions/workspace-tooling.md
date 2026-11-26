@@ -11,7 +11,9 @@ tags:
   - build
   - catalog
   - changesets
+  - kit-changesets-changelog
   - monorepo
+  - packages
   - pnpm
   - publint
   - tsdown
@@ -21,8 +23,8 @@ sources:
     resource: https://pnpm.io/catalogs
     title: pnpm, catalogs
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T18:05:50Z }
-verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T23:18:56Z }
+verified: { by: human:jjloneman, at: 2026-11-26T01:05:37Z }
 ---
 
 # How the monorepo is built
@@ -50,13 +52,12 @@ verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
   exact version on publish.
 - **Versions are exact** (`saveExact: true`), so the lockfile is the only thing
   that moves a dependency.
-- **Each package that builds code will build with its own `tsdown.config.ts`**,
-  into `dist/`, as the package issues plan; a JSON-only package such as
-  `kit-tsconfig` has none.
-  - As of 2026-11-25, no package exists yet.
-- **Each package will check what it publishes** with a `lint:package` script,
+- **Each package that builds code builds with its own `tsdown.config.ts`**, into
+  `dist/`; a JSON-only package such as `kit-tsconfig` has none.
+  - As of 2026-11-25, `kit-changesets-changelog` (#4) is the first.
+- **Each package checks what it publishes** with a `lint:package` script,
   `pnpm build && publint && attw --pack --profile esm-only`, which CI's
-  `📦 Package` job already runs wherever it's defined.
+  `📦 Package` job runs wherever it's defined.
   - A package that ships only JSON, such as `kit-tsconfig`, skips attw (#8).
 - **Root scripts run across the workspace** with `pnpm -r --if-present`, and
   `pnpm check` runs lint, format, typecheck, tests with coverage and the package

@@ -155,6 +155,17 @@ const CONFIG: Linter.Config[] = defineConfig(
         },
       ],
 
+      // An unused name is kept with a `_` prefix rather than dropped, so a
+      // skipped tuple element or parameter still says what it is.
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          destructuredArrayIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+        },
+      ],
+
       /*
        * Numbers interpolate safely; the rule's worth is catching `undefined`,
        * `null`, and `[object Object]` slipping into a string.

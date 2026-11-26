@@ -1,0 +1,62 @@
+{
+  "author": {
+    "name": "JJ Loneman",
+    "url": "https://github.com/jjloneman"
+  },
+  "bugs": {
+    "url": "https://github.com/jjloneman/jj-kit/issues"
+  },
+  "description": "🦋 A Changesets changelog formatter that prefixes each line with the gitmoji and scope of the commit that added it.",
+  "devDependencies": {
+    "@arethetypeswrong/cli": "catalog:",
+    "@changesets/types": "7.0.0",
+    "@types/node": "catalog:",
+    "publint": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=26"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "CHANGELOG.md",
+    "dist",
+    "src",
+    "!src/**/*.test.ts"
+  ],
+  "homepage": "https://github.com/jjloneman/jj-kit/tree/main/packages/changesets-changelog#readme",
+  "keywords": [
+    "changelog",
+    "changesets",
+    "conventional-commits",
+    "gitmoji"
+  ],
+  "license": "MIT",
+  "name": "@jjloneman/kit-changesets-changelog",
+  "peerDependencies": {
+    "@changesets/cli": "^3.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "directory": "packages/changesets-changelog",
+    "type": "git",
+    "url": "git+https://github.com/jjloneman/jj-kit.git"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "lint:package": "pnpm build && publint && attw --pack --profile esm-only",
+    "typecheck": "tsc"
+  },
+  "sideEffects": false,
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "version": "0.0.0"
+}

@@ -11,6 +11,13 @@ description: >-
 # - a `pnpm-lock.yaml` that matches the workspace, since the install is
 #   frozen.
 inputs:
+  cache:
+    default: "true"
+    description: >-
+      Whether to restore and save the pnpm store cache; pass `false` in a job
+      that holds write permissions or `id-token: write`, or builds what's
+      published, so it never installs from a store another job saved.
+
   node-version:
     default: "26"
     description: >-
@@ -32,19 +39,57 @@ runs:
           exit 1
         fi
 
-    # `cache: true` restores the pnpm store; the `pnpm install` below still has
-    # to link node_modules out of it, which no store cache can remove.
+    # pnpm/action-setup's own parse of an empty or misspelled value fails with
+    # a generic YAML error, so check it here first.
+    #
+    # - A job that can request an OIDC token, as `id-token: write` allows, gets
+    #   a warning while the cache is on.
+    #
+    # - `contents: write` leaves no trace in the job's environment, so a job
+    #   holding only that gets no warning.
+    - name: 🔍 Check the cache input
+      env:
+        CACHE: ${{ inputs.cache }}
+      shell: bash
+      run: |
+        case "$CACHE" in
+          true | True | TRUE) ;;
+          false | False | FALSE) exit 0 ;;
+          *)
+            echo "::error title=setup::cache must be true or false; leave it out to keep the cache on."
+            exit 1
+            ;;
+        esac
+
+        if [[ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]]; then
+          echo "::warning title=setup::This job can request an OIDC token but restores the pnpm store cache; pass cache: false so it never installs from a store another job saved."
+        fi
+
+    # The cache is an input because a store saved after another job's steps
+    # ran mustn't reach a job that can push or publish, or builds what's
+    # published.
+    #
+    # - As of v6.1.1, pnpm/action-setup has no restore-only mode, so such a job
+    #   turns the cache off entirely; see
+    #   docs/decisions/unprivileged-release-build.md.
+    #
+    # - The `pnpm install` below still has to link node_modules out of the
+    #   store, which no store cache can remove.
     - name: 📦 Install pnpm
       uses: pnpm/action-setup@v6.1.1
       with:
-        cache: true
+        cache: ${{ inputs.cache }}
 
     # Defaults to Node 26, the one the kit supports; see
     # docs/decisions/node-26-only.md.
+    #
+    # - Its own automatic cache stays off, since pnpm/action-setup owns the
+    #   store cache and `cache: false` turns off only that one.
     - name: 🟢 Install Node
       uses: actions/setup-node@v7.1.0
       with:
         node-version: ${{ inputs.node-version }}
+        package-manager-cache: false
 
     - name: 🔗 Install dependencies
       shell: bash

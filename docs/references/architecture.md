@@ -15,12 +15,13 @@ tags:
   - npm
   - packages
   - releases
+  - setup-action
   - testing
   - type-stripping
   - version-pr
   - workspace
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T03:14:24Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T19:09:51Z }
 verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
 ---
 
@@ -28,7 +29,8 @@ verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
 
 - **As of 2026-11-26.** The workspace, CI and release pipeline are in place;
   `kit-changesets-changelog` (#4) is the first package built, and
-  `require-changeset` and `version-or-release` (#5) the first actions.
+  `require-changeset` and `version-or-release` (#5), then `setup` (#6), the
+  first actions.
 - Each package and action issue updates this page in the same PR.
 - Why it's built this way is in the [decisions bundle](../decisions/index.md).
 
@@ -42,14 +44,16 @@ verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
   - Each has a private `package.json` in the workspace, so Changesets versions,
     changelogs and tags it (see
     [How the actions are versioned](../decisions/action-versions.md)).
-  - An action's logic is zero-dependency TypeScript in its `src/`, which Node
-    runs unbuilt under type stripping, tested like a package's.
-  - `actions/lib/` holds the code both actions share, imported by relative path;
-    it's a private package, but not an action.
+  - An action with logic of its own keeps it as zero-dependency TypeScript in
+    its `src/`, which Node runs unbuilt under type stripping, tested like a
+    package's.
+  - `setup` has none: its `action.yml` runs other actions and `pnpm install`.
+  - `actions/lib/` holds the code `require-changeset` and `version-or-release`
+    share, imported by relative path; it's a private package, but not an action.
 - `docs/decisions/` and `docs/references/`: the two OKF bundles.
 - `.changeset/`: pending changesets and the Changesets config.
-- `.github/`: `workflows/ci.yml`, `workflows/release.yml`, the ruleset
-  protecting `main`, and the setup action #6 replaces.
+- `.github/`: `workflows/ci.yml`, `workflows/release.yml` and the ruleset
+  protecting `main`.
 - Root configs:
   - ESLint, Prettier and TypeScript, each copied from okf-tools until its
     package lands;
@@ -101,6 +105,7 @@ graph LR
   - `📦 Package`, which builds each package and checks it with publint and attw;
   - `🦋 Changeset`, on PRs only, through `./actions/require-changeset`.
 - `release.yml` runs `./actions/version-or-release` on every push to `main`.
+- Every job that runs a pnpm script installs through `./actions/setup` first.
 - jj-kit uses its own actions by local path, so a PR's CI runs them as the PR
   changes them.
 - Every `ci.yml` job is a required check on `main`, through

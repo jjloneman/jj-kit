@@ -12,8 +12,12 @@ tags:
   - engines
   - node
   - setup-action
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T05:03:12Z }
+sources:
+  - id: setup-node-version-file
+    resource: https://github.com/actions/setup-node/blob/v7.1.0/docs/advanced-usage.md
+    title: actions/setup-node, advanced usage
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T19:09:51Z }
 verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
 ---
 
@@ -24,19 +28,29 @@ verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
 
 ## Decision
 
-- **As of 2026-11-25,** from `package.json`, `.github/actions/setup/action.yml`
-  and `.github/workflows/ci.yml`.
+- **As of 2026-11-26,** from `package.json`, `actions/setup/action.yml` and
+  `.github/workflows/ci.yml`.
 - **Node 26 is the only supported Node** (26.13.1 LTS as of 2026-11-24, per #1).
   - The root has `engines.node: ">=26"`, and `devEngines.runtime` refuses any
     older Node with `onFail: error`.
   - Every kit package declares `engines.node: ">=26"` (#4, #7–#11).
-- **CI runs Node 26 alone**, with no version matrix; the setup action installs
-  `node-version: "26"`.
+- **CI runs Node 26 alone**, with no version matrix; the kit's `setup` action
+  installs `node-version: "26"` unless told otherwise.
+- **Node 26 is set in three places, with no single source:** `engines.node`,
+  `devEngines.runtime` and the `setup` action's `node-version` default.
+  - `engines` and `devEngines` are floors (`>=26`), while the action picks the
+    one Node CI runs, so they answer different questions.
+  - **Rejected: reading the version from `package.json`** through
+    `actions/setup-node`'s `node-version-file`, which takes `devEngines.runtime`
+    or `engines.node`, both the range `>=26`, and installs the newest match in
+    the runner's cache, else downloads one[^setup-node-version-file].
+    - CI's Node would then follow GitHub's runner images, moving to Node 27 once
+      they cache it, with no kit change (#6).
 - **A consumer whose published code supports older Node keeps that support**,
   but runs its tooling on Node 26.
   - Only a job that tests its own published code on an older Node passes that
     version to the kit's `setup` action, which takes a `node-version` input
-    defaulting to `"26"` (#6).
+    defaulting to `"26"`.
   - That job runs just the install and its tests; lint, typecheck, hooks and
     releases stay on Node 26.
   - A consumer that refuses older Node at install, as jj-kit's own `devEngines`
@@ -60,13 +74,18 @@ verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
 
 - A consumer's own tooling needs Node 26 too: CI, git hooks, and the developer's
   machine.
-- Node 26 is set in three places today: `engines`, `devEngines`, and the setup
-  action; #6 decides whether one of them becomes the source for the others.
-- Moving to the next Node LTS is a breaking change for every package.
+- Moving to the next Node LTS is a breaking change for every package, and
+  updates all three places together.
 
 ## Links
 
 - #1, the roadmap's toolchain notes.
 - #2, the scaffold.
 - #3, which records this decision.
-- #6, the `setup` action.
+- #6, the `setup` action, which settled where the version is set.
+
+[^setup-node-version-file]:
+    As of `actions/setup-node` v7.1.0, `node-version-file: package.json` reads
+    `volta.node`, then `devEngines.runtime`, then `engines.node`, and without
+    `check-latest` a range is matched against the runner's cached Node versions
+    before any download.

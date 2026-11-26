@@ -25,17 +25,20 @@
   and a private `package.json`, so Changesets versions, changelogs and tags it
   (see [How the actions are versioned](docs/decisions/action-versions.md)).
   - `require-changeset/` — fails a PR that adds no changeset.
+  - `setup/` — installs pnpm, Node and the frozen-lockfile dependency tree; the
+    prelude every CI job shares, with no code of its own.
   - `version-or-release/` — keeps the version PR open, or publishes.
-  - `lib/` — code both actions share, such as annotations, reading the release
-    plan and the Node check; not an action.
+  - `lib/` — code the two TypeScript actions share, such as annotations, reading
+    the release plan and the Node check; not an action.
     - The actions import it by relative path (`../../lib/src/…`), since a
       consumer's runner has the whole repo at the pinned SHA but no
       `node_modules`.
-    - Each action depends on it as `workspace:*`, so a release of `lib` also
-      releases both actions.
-  - An action's logic is zero-dependency TypeScript in its `src/`, with its own
-    `tsconfig.json`, which Node runs unbuilt under type stripping, so it keeps
-    `.ts` import specifiers.
+    - `require-changeset` and `version-or-release` each depend on it as
+      `workspace:*`, so a release of `lib` also releases both; `setup` doesn't
+      use it.
+  - An action with logic of its own keeps it as zero-dependency TypeScript in
+    its `src/`, with its own `tsconfig.json`, which Node runs unbuilt under type
+    stripping, so it keeps `.ts` import specifiers.
 - `packages/<name>/` — one npm package each, with its own `package.json` and
   `tsconfig.json`, built with its own `tsdown.config.ts` unless it ships JSON
   only.
@@ -49,8 +52,6 @@
   [Versioning & releases](#-versioning--releases)).
 - `.github/`:
   - `workflows/` — `ci.yml` and `release.yml`;
-  - `actions/setup/` — the shared pnpm + Node + install prelude (#6 replaces
-    it);
   - `rulesets/main.json` — protects `main`.
 - `.githooks/` — the `pre-commit` and `pre-push` hooks (#11 replaces them).
 - `eslint-rules/` — the local `no-dotted-jsdoc-param` rule, loaded by

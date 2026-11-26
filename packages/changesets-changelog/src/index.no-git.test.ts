@@ -10,10 +10,16 @@ const { outcomes } = vi.hoisted((): { outcomes: GitOutcome[] } => ({
   outcomes: [],
 }));
 
-// Stands in for git behaving in ways no real test machine shows, one queued
-// outcome per call.
-vi.mock("node:child_process", () => ({
-  execFileSync: vi.fn(() => {
+/*
+ * Stands in for git behaving in ways no real test machine shows, one queued
+ * outcome per call.
+ *
+ * - The implementation goes through `mockImplementation` on an untyped
+ *   `vi.fn()`: `execFileSync` is overloaded to return a string or a Buffer,
+ *   and no single implementation satisfies every overload without a cast.
+ */
+vi.mock(import("node:child_process"), () => ({
+  execFileSync: vi.fn().mockImplementation(() => {
     const outcome = outcomes.shift();
 
     if (outcome === undefined || "thrown" in outcome) {
@@ -96,7 +102,7 @@ describe("readCommitSubject when git misbehaves", () => {
       status: "found",
       subject: "feat: ✨ add x",
     });
-    const [, args, options] = vi.mocked(execFileSync).mock.lastCall ?? [];
+    const [_file, args, options] = vi.mocked(execFileSync).mock.lastCall ?? [];
     expect(args).toStrictEqual([
       "log",
       "-1",

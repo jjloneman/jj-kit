@@ -12,7 +12,7 @@
  */
 import { execFileSync } from "node:child_process";
 
-/*
+/**
  * The two functions changesets calls.
  *
  * - Narrower than changesets' own `ChangelogFunctions`: each returns a plain
@@ -56,11 +56,7 @@ export type CommitLookup =
       status: "missing" | "unreadable";
     }
   | {
-      /**
-       * git read the commit.
-       *
-       * @example "found"
-       */
+      /** git read the commit. @example "found" */
       status: "found";
 
       /**
@@ -73,25 +69,13 @@ export type CommitLookup =
 
 /** The parts of a `<type>(<scope>)!: <gitmoji> <subject>` commit subject. */
 export type ConventionalSubject = {
-  /**
-   * The gitmoji after the colon, when there is one.
-   *
-   * @example "✨"
-   */
+  /** The gitmoji after the colon, when there is one. @example "✨" */
   gitmoji?: string;
 
-  /**
-   * Whether the type carries the breaking-change `!`.
-   *
-   * @example true
-   */
+  /** Whether the type carries the breaking-change `!`. @example true */
   isBreaking: boolean;
 
-  /**
-   * The scope in parentheses, when there is one.
-   *
-   * @example "eslint-config"
-   */
+  /** The scope in parentheses, when there is one. @example "eslint-config" */
   scope?: string;
 };
 
@@ -113,28 +97,34 @@ export type DependencyUpdate = {
   newVersion?: string | undefined;
 };
 
-/*
- * One gitmoji: a pictograph with an optional skin tone and variation
- * selector, optionally joined to more of the same.
- *
- * - `🏗️` and `⬆️` match whole, and a plain first word never does.
+/**
+ * One pictograph, with an optional skin tone and variation selector.
  *
  * - Escapes rather than the literal characters, since the variation selector
- *   and the joiner are invisible in an editor.
+ *   is invisible in an editor.
  */
 const PICTOGRAPH_SOURCE =
   String.raw`\p{Extended_Pictographic}` +
   String.raw`\p{Emoji_Modifier}?\u{FE0F}?`;
+
+/**
+ * One gitmoji: a pictograph, optionally joined to more of the same.
+ *
+ * - `🏗️` and `⬆️` match whole, and a plain first word never does.
+ *
+ * - An escape rather than the literal joiner, which is invisible in an
+ *   editor.
+ */
 const GITMOJI_SOURCE =
   PICTOGRAPH_SOURCE + String.raw`(?:\u{200D}${PICTOGRAPH_SOURCE})*`;
 
-/*
+/**
  * The exit status `git rev-parse --verify --quiet` gives a revision that
  * names no commit, as opposed to 128 for git failing outright.
  */
 const NO_SUCH_COMMIT_STATUS = 1;
 
-/*
+/**
  * How long one git call may run before it's abandoned.
  *
  * - Lazy fetches and prompts are off, so only a stuck process reaches it;
@@ -145,7 +135,7 @@ const GIT_TIMEOUT_MS = 10_000;
 /** Characters Markdown would read as formatting inside a bold scope. */
 const MARKDOWN_SPECIAL_PATTERN = /[!#*<>[\\\]_`|~]/gu;
 
-/*
+/**
  * Lookups already made, keyed by repo and hash.
  *
  * - changesets asks for one line at a time, so the calls can't be batched;
@@ -156,7 +146,7 @@ const LOOKUP_CACHE = new Map<string, CommitLookup>();
 /** The length a hash is shortened to in a line, as changesets' own does. */
 const SHORT_HASH_LENGTH = 7;
 
-/*
+/**
  * A conventional-commit subject: the type, an optional scope and `!`, then
  * an optional gitmoji before the description.
  */
@@ -232,6 +222,10 @@ export function formatReleaseLine({
  * - A dependency with no new version, a `none` release, is left out rather
  *   than printed as `name@undefined`.
  *
+ * @param changesets - The changesets in the release, each with the hash of
+ *   the commit that added it.
+ * @param dependenciesUpdated - The dependencies bumped in the same release,
+ *   including any `none` release with no new version.
  * @returns the lines, or an empty string, which changesets leaves out, when
  *   no dependency was bumped.
  */
@@ -325,11 +319,7 @@ export function readCommitSubject({
   cwd,
   hash,
 }: {
-  /**
-   * The repo to read from.
-   *
-   * @example "/Users/me/jj-kit"
-   */
+  /** The repo to read from. @example "/Users/me/jj-kit" */
   cwd: string;
 
   /**

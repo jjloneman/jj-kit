@@ -6,7 +6,7 @@
   "bugs": {
     "url": "https://github.com/jjloneman/jj-kit/issues"
   },
-  "description": "A Changesets changelog formatter that prefixes each line with the gitmoji and scope of the commit that added it",
+  "description": "🦋 A Changesets changelog formatter that prefixes each line with the gitmoji and scope of the commit that added it.",
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
     "@changesets/types": "7.0.0",

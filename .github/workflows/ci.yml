@@ -87,6 +87,49 @@ jobs:
       # with nothing to pack.
       - run: pnpm lint:package
 
+  # Temporary, for #6's PR only, removed before merge: checks that
+  # `node-version` reaches setup-node and that an empty value fails early.
+  setup-inputs:
+    name: 🧪 Setup inputs (temporary)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      # jj-kit's own `devEngines` is expected to refuse the install on Node 24.
+      - name: 🧰 Set up with Node 24
+        id: node24
+        uses: ./actions/setup
+        with:
+          node-version: "24"
+
+        continue-on-error: true
+      - name: 🔍 Check Node 24 was installed
+        env:
+          OUTCOME: ${{ steps.node24.outcome }}
+        shell: bash
+        run: |
+          node --version
+          echo "setup outcome: $OUTCOME"
+          [[ "$(node --version)" == v24.* ]]
+
+      - name: 🧰 Set up with an empty version
+        id: empty
+        uses: ./actions/setup
+        with:
+          node-version: ""
+
+        continue-on-error: true
+      - name: 🔍 Check the empty version failed
+        env:
+          OUTCOME: ${{ steps.empty.outcome }}
+        shell: bash
+        run: |
+          echo "setup outcome: $OUTCOME"
+          [[ "$OUTCOME" == failure ]]
   test:
     name: 🧪 Tests
     runs-on: ubuntu-latest

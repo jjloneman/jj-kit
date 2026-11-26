@@ -5,7 +5,8 @@ description:
   "`release.yml` builds and packs in a job with `contents: read` alone, through
   `pack-release` and `changesets/action/pack`, and only a second job, which
   installs but never builds, holds `contents: write`, `pull-requests: write` and
-  `id-token: write` to open the version PR or publish the packed tarballs."
+  `id-token: write` to open the version PR or publish the packed tarballs;
+  neither restores the pnpm store cache."
 tags:
   - actions
   - build
@@ -15,7 +16,9 @@ tags:
   - github-token
   - npm
   - permissions
+  - pnpm
   - releases
+  - setup-action
   - supply-chain
 sources:
   - id: changesets-action-pack
@@ -27,8 +30,11 @@ sources:
   - id: id-token
     resource: https://docs.github.com/en/actions/concepts/security/openid-connect
     title: GitHub Docs, OpenID Connect
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T22:04:04Z }
+  - id: pnpm-action-setup-cache
+    resource: https://github.com/pnpm/action-setup/tree/v6.1.1/src
+    title: pnpm/action-setup v6.1.1, its cache restore and save
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T23:51:20Z }
 verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
 ---
 
@@ -43,7 +49,8 @@ verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
 ## Decision
 
 - **As of 2026-11-26,** from `.github/workflows/release.yml`,
-  `actions/pack-release/` and `actions/version-or-release/action.yml`.
+  `actions/pack-release/`, `actions/setup/action.yml` and
+  `actions/version-or-release/action.yml`.
 - **`release.yml` runs two jobs:**
   - `📦 Plan and pack`, with `contents: read` alone: `setup`, then
     `pack-release`, which decides `version`, `publish` or `none` (see
@@ -68,6 +75,39 @@ verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
     what passed the `0.0.0` hold-back and the build check (#23's review).
     - **Rejected: letting `pack` work out the plan again**, which a flaky tag
       lookup could change, and which asks the registry twice.
+- **Neither release job uses the pnpm store cache**, through `setup`'s
+  `cache: false` in both (#28).
+  - With the cache on, `pnpm/action-setup` v6.1.1 restores the store saved for
+    the lockfile's hash, or else the newest under a `pnpm-cache-<os>-<arch>-`
+    prefix, and saves one in its post step on anything but an exact key hit,
+    after the job's own steps ran[^pnpm-action-setup-cache].
+  - So `ci.yml`'s jobs on `main`, which run every dev tool, save stores either
+    release job would restore.
+  - **The privileged job** would install from such a store while it can push and
+    publish.
+  - **The plan job** builds what's published, so a store poisoned by a tool that
+    only `ci.yml` runs, such as an ESLint or Vitest plugin, would change the
+    tarballs, though that tool never runs in the plan job.
+    - **Rejected: keeping the plan job's cache and recording that risk**, which
+      would leave a way to change the published code beyond the build's own
+      dependencies (#28's review).
+  - Only `ci.yml`'s jobs, which hold no write permission and build nothing that
+    ships, keep the cache.
+  - `setup` also passes `package-manager-cache: false` to `actions/setup-node`,
+    whose automatic cache, as of v7.1.0, covers npm projects only, so
+    `cache: false` stays the one switch if that widens.
+  - **Rejected: restoring without saving, with `actions/cache/restore`**, keyed
+    like `pnpm/action-setup`'s: it still restores what an unprivileged job
+    saved, and adds an action pin; `pnpm/action-setup` has no restore-only mode
+    of its own.
+  - **`setup` warns, and leaves the cache on, in a job that can request an OIDC
+    token**, which `ACTIONS_ID_TOKEN_REQUEST_URL` in its environment shows
+    (#28's review).
+  - **Rejected: `setup` turning the cache off itself in a privileged job**:
+    nothing in the environment shows `contents: write`, or that a job builds
+    what's published, so an explicit input stays the one switch.
+  - **Rejected: the cache off by default**, which would cost every unprivileged
+    CI job its cache.
 - **Version and publish share the privileged job.**
   - **Rejected: a third job, so the version path never holds
     `id-token: write`.** It runs only the Changesets CLI and the changelog
@@ -93,6 +133,11 @@ verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
   environment[^changesets-action-run].
   - pnpm 12 runs no dependency's build scripts unless the workspace allows them,
     and jj-kit allows none.
+- **Both release jobs install from the registry**, checked against the
+  lockfile's integrity hashes, so the plan job pays a cold install on every push
+  to `main`, and the release job another whenever it runs.
+  - So only the build's own dependencies can change what's built, not a tool
+    that runs in `ci.yml` alone.
 - A consumer's release workflow has two jobs, as
   [Consuming the kit](../references/consuming.md) shows.
 - The root's `pnpm release` script is gone, since nothing runs it.
@@ -101,6 +146,7 @@ verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
 
 - #5, whose review raised it.
 - #23, which settled it.
+- #28, which keeps the store cache out of both release jobs.
 
 [^changesets-action-pack]:
     `changesets/action/pack` v2.1.2 needs no job permissions, and uploads the
@@ -113,3 +159,8 @@ verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
 [^id-token]:
     With `id-token: write`, a job's steps get `ACTIONS_ID_TOKEN_REQUEST_URL` and
     `ACTIONS_ID_TOKEN_REQUEST_TOKEN`, so any of them can request a token.
+
+[^pnpm-action-setup-cache]:
+    In v6.1.1, `src/cache-restore/run.ts` restores with that prefix as a restore
+    key, `src/cache-save/run.ts` saves unless the restored key equals the
+    primary one, and both return early when `cache` is false.

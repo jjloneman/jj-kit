@@ -17,6 +17,11 @@ okf_version: "0.2"
   columns, frontmatter included, through a `proseWrap` override for Markdown
   files only that leaves changesets unwrapped, so each summary reaches
   `CHANGELOG.md` as written.
+- [How the actions are versioned](action-versions.md) - Each action is a private
+  workspace package under `actions/`, which Changesets versions, changelogs and
+  tags as `<name>@<version>` with nothing published; consumers pin it by SHA
+  with that tag in a comment, and a Renovate preset to update those pins is a
+  follow-up.
 - [How the monorepo is built](workspace-tooling.md) - A plain pnpm workspace
   with Changesets, and no monorepo framework such as Nx, Turborepo or Lerna;
   shared versions live in a pnpm catalog, packages depend on each other as
@@ -47,6 +52,11 @@ okf_version: "0.2"
   package has its own SemVer version, changelog and `<name>@<version>` tag, with
   no Changesets `fixed` or `linked` groups, so a breaking change in one package
   never forces a major release of the others.
+- [Why empty changesets don't block a publish](publish-past-empty-changesets.md) -
+  `version-or-release` sets aside the pending changesets for one run when every
+  one of them is empty, so `changesets/action` takes its publish path and
+  publishes any version npm doesn't have yet, rather than waiting for the next
+  version PR's merge.
 - [Why every PR adds a changeset](changeset-every-pr.md) - CI's required
   `🦋 Changeset` check fails a PR whose `changeset status --output` lists no
   changeset, since `changeset status` alone passes any PR that changes no
@@ -169,6 +179,7 @@ verified: { by: human:jjloneman, at: 2026-11-25T13:00:00Z }
 - `packages`: The kit's npm packages as a set.
 - `peer-dependencies`: A package's `peerDependencies` and their ranges.
 - `permissions`: Workflow and repo permissions.
+- `pinning`: How a consumer pins a package or action version.
 - `pnpm`: pnpm and its workspace settings.
 - `pre-commit`: The pre-commit hook.
 - `pre-push`: The pre-push hook.

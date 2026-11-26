@@ -21,6 +21,21 @@
 
 ## 🗂️ Project layout
 
+- `actions/<name>/` — one composite GitHub Action each, with its `action.yml`
+  and a private `package.json`, so Changesets versions, changelogs and tags it
+  (see [How the actions are versioned](docs/decisions/action-versions.md)).
+  - `require-changeset/` — fails a PR that adds no changeset.
+  - `version-or-release/` — keeps the version PR open, or publishes.
+  - `lib/` — code both actions share, such as annotations, reading the release
+    plan and the Node check; not an action.
+    - The actions import it by relative path (`../../lib/src/…`), since a
+      consumer's runner has the whole repo at the pinned SHA but no
+      `node_modules`.
+    - Each action depends on it as `workspace:*`, so a release of `lib` also
+      releases both actions.
+  - An action's logic is zero-dependency TypeScript in its `src/`, with its own
+    `tsconfig.json`, which Node runs unbuilt under type stripping, so it keeps
+    `.ts` import specifiers.
 - `packages/<name>/` — one npm package each, with its own `package.json` and
   `tsconfig.json`, built with its own `tsdown.config.ts` unless it ships JSON
   only.
@@ -37,8 +52,6 @@
   - `actions/setup/` — the shared pnpm + Node + install prelude (#6 replaces
     it);
   - `rulesets/main.json` — protects `main`.
-  - `scripts/renovate-ships.sh` — decides whether a Renovate PR needs a
-    changeset (#5 replaces it).
 - `.githooks/` — the `pre-commit` and `pre-push` hooks (#11 replaces them).
 - `eslint-rules/` — the local `no-dotted-jsdoc-param` rule, loaded by
   `eslint.config.ts` (#9 replaces it).
@@ -46,8 +59,8 @@
   - `eslint.config.ts` (#10), `prettier.config.ts` (#7) and `tsconfig.json`,
     which covers the root's own files only (#8), each copied from okf-tools
     until the package that replaces it lands;
-  - `vitest.config.ts`, one Vitest project per package, which no kit package
-    replaces.
+  - `vitest.config.ts`, one Vitest project per package and action, which no kit
+    package replaces.
 - `pnpm-workspace.yaml` — the workspace, the shared `catalog` of dev dependency
   versions (referenced as `catalog:`), and the
   [moratorium](#-7-day-dependency-moratorium).
@@ -133,7 +146,8 @@
   included.
   - ESLint's `jsonc/sort-keys` and `yml/sort-keys` enforce it, and
     `pnpm lint:fix` sorts them.
-- **GitHub YAML follows a documented order instead**, in `.github/**/*.yml`.
+- **GitHub YAML follows a documented order instead**, in `.github/**/*.yml` and
+  `actions/*/action.yml`.
   - The orders live in `eslint.config.ts`'s `yml/sort-keys` options, and
     `pnpm lint:fix` applies them.
   - A workflow's or action's top level: `name`, `description`, `title`,
@@ -207,9 +221,9 @@
 
 - **`pnpm test` runs every package's tests** as one Vitest workspace from the
   root.
-  - Each package with a `package.json` is its own Vitest project.
+  - Each package and action with a `package.json` is its own Vitest project.
 - **`pnpm test:coverage` adds the gate:** **100%** statements, branches,
-  functions, and lines across `packages/*/src`.
+  functions, and lines across `actions/*/src` and `packages/*/src`.
 - A branch nothing can reach is dead code to delete, not a line to exempt; no
   coverage-ignore comments.
 - **Test data is fabricated.** Never copy a real repo's files into a test.
@@ -234,7 +248,8 @@
 - **ESLint's typed lint needs every `.ts` file inside a project**, through the
   nearest `tsconfig.json`.
   - A new top-level folder of `.ts` files goes in the root `tsconfig.json`'s
-    `include`.
+    `include`, unless each package in it has its own `tsconfig.json`, as in
+    `packages/` and `actions/`.
 
 ## 🤖 CI
 
@@ -243,27 +258,34 @@
   - `🔷 Typecheck`;
   - `🧪 Tests`, with coverage;
   - `📦 Package`, `pnpm lint:package` in each package that defines it.
-- **On a PR it also runs `🦋 Changeset`**, which fails when the PR adds or edits
-  no changeset, judged by `changeset status`'s own reader (see
-  [Versioning & releases](#-versioning--releases)).
-  - It skips the version PR (`changeset-release/main`) from this repo; a fork's
-    branch of that name is still checked.
-  - **A Renovate PR (`renovate/*`) from this repo needs a changeset only when it
-    ships a change**, which
-    [.github/scripts/renovate-ships.sh](.github/scripts/renovate-ships.sh)
-    decides:
-    - a change to a package's `dependencies`, `optionalDependencies`,
-      `peerDependencies` or `engines`, a `catalog:` entry they point to
-      included;
-    - a dev dependency or root bump ships nothing, so it passes without one.
-    - When one is needed, it must bump a package, not be empty; the owner adds
-      `pnpm changeset` to the Renovate branch.
-    - **The script needs bash 5** (`inherit_errexit`) and `yq` v4, both on
-      GitHub's Ubuntu runners.
-      - macOS's built-in bash 3.2 can't run it; to test it locally,
-        `brew install bash yq`.
-- `release.yml` runs on every push to `main`, and by hand from "Run workflow"
-  (see below).
+- **On a PR it also runs `🦋 Changeset`**, through the kit's own
+  [require-changeset](actions/require-changeset/action.yml) action, which fails
+  when the PR adds or edits no changeset, judged by `changeset status`'s own
+  reader (see [Versioning & releases](#-versioning--releases)).
+  - It skips the version PR (`changeset-release/main`) from this repo, opened by
+    `github-actions[bot]`; a fork's or a person's branch of that name is still
+    checked.
+  - **A Renovate PR (`renovate/**` from this repo, opened by `renovate[bot]`)
+    needs a changeset only when it ships a change:**
+    - a change to a versioned package's `dependencies`, `optionalDependencies`,
+      `peerDependencies`, `engines` or entry points, a `catalog:` entry they
+      point to included, or to a file it publishes, such as an action's
+      `action.yml`, needs a changeset that bumps each such package; the owner
+      adds `pnpm changeset` to the Renovate branch;
+    - any other file in a versioned package, such as a build config, needs a
+      changeset, an empty one included;
+    - versioned means Changesets would release it: a name and version, not in
+      `ignore`, and public, or private while `privatePackages.version` is on, as
+      it is here, so the actions count;
+    - a dev dependency, or the monorepo root's bump, ships nothing, so it passes
+      without one.
+    - It reads `pnpm-workspace.yaml` through `yq` v4, which GitHub's Ubuntu
+      runners ship.
+- `release.yml` runs on every push to `main`, through the kit's own
+  [version-or-release](actions/version-or-release/action.yml) action, and by
+  hand from "Run workflow" (see below).
+- **jj-kit uses its actions by local path** (`./actions/<name>`), so a PR's CI
+  runs the actions as that PR changes them.
 - **Every action is pinned to an exact `vX.Y.Z`.**
 - **Every job declares its own `permissions`**, under a top-level
   `permissions: {}`.
@@ -324,12 +346,11 @@
   - The source must stay erasable syntax with `.ts` import specifiers.
   - See [How changelog lines are built](docs/decisions/changelog-format.md).
 - **Empty changesets never release.**
-  - `release.yml` skips the version PR while every pending changeset is empty.
+  - `release.yml` opens no version PR while every pending changeset is empty.
+  - Instead, `version-or-release` sets the empty ones aside for that run, so it
+    publishes any version npm doesn't have yet; with nothing to publish, it ends
+    green.
   - The next real one's version PR deletes them all.
-  - A run on `main` with only empty changesets pending logs "All changesets are
-    empty. Not creating PR" and ends green; that's success, not a failure.
-    - It never logs "No unpublished projects to publish", since it never reaches
-      the publish step.
 - **`release.yml` keeps a rolling `chore(release): 🚀 version packages` PR
   open** while changesets are pending, labeled `🚀 release` and assigned to
   `jjloneman`.
@@ -341,16 +362,21 @@
     (`pnpm build && changeset publish`).
   - That publishes every package version npm doesn't have yet, and tags each as
     `<name>@<version>`, such as `@jjloneman/kit-tsconfig@1.0.0`.
-- **If a version PR's merge published nothing, check why before acting:**
-  - **A newer push cancelled its run**, since the concurrency group doesn't
-    queue: start `release.yml` on `main` from Actions → "Run workflow".
-  - **An empty changeset landed on `main` just before the merge**, so the action
-    took its "all empty" path: it publishes with the next version PR's merge,
-    since `changeset publish` publishes every version npm doesn't have yet.
+  - Each action is tagged the same way, such as `require-changeset@1.0.0`, with
+    nothing published.
+- **If a version PR's merge published nothing, a newer push cancelled its run**,
+  since the concurrency group doesn't queue.
+  - The next push to `main` with no releasing changeset pending publishes it; to
+    publish sooner, start `release.yml` on `main` from Actions → "Run workflow".
   - **Never use "Re-run jobs" on an old run:** it acts on that run's commit, so
     it could publish from a stale commit or rebuild the version PR without later
     changes.
-  - #5 replaces this.
+- **A red `🦋 Version PR or publish` run on a docs or CI merge means a version
+  is waiting to publish** and its publish failed, usually a new package's first
+  version whose trusted publisher isn't set up yet.
+  - Each push to `main` with only empty changesets retries it, so it stays red
+    until fixed; fix the publish rather than the run (see
+    [Why empty changesets don't block a publish](docs/decisions/publish-past-empty-changesets.md)).
 - **Publishing uses npm trusted publishing** (OIDC, `id-token: write`), so no
   npm token exists.
   - Provenance is signed by the same identity.

@@ -12,8 +12,8 @@ tags:
   - engines
   - node
   - setup-action
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T18:09:43Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T01:49:34Z }
 verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
 ---
 
@@ -50,7 +50,7 @@ verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
   ones buys nothing and costs a CI matrix.
 - jj-kit's own `prettier.config.ts` relies on Node running TypeScript under type
   stripping today, since Prettier loads it with a plain `import()`, and the
-  planned actions' TypeScript scripts will too (#5).
+  `require-changeset` action's TypeScript scripts do too (#5).
   - Any Node with type stripping on by default would do; 26 is simply the one
     the kit supports, not the only one that strips types.
 - One version keeps every check, from `@types/node` to the typecheck, aimed at

@@ -7,6 +7,7 @@ description:
   that changes no package; a PR that ships nothing adds `pnpm changeset
   --empty`.
 tags:
+  - actions
   - changesets
   - ci
   - pull-requests
@@ -18,8 +19,8 @@ sources:
   - id: changesets-empty
     resource: https://github.com/changesets/changesets/blob/main/docs/command-line-options.md
     title: Changesets, command line options
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T17:54:10Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T04:03:36Z }
 verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
 ---
 
@@ -30,15 +31,16 @@ verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
 
 ## Decision
 
-- **As of 2026-11-25,** from `.github/workflows/ci.yml` and
-  `.github/rulesets/main.json`.
+- **As of 2026-11-26,** from `.github/workflows/ci.yml`,
+  `actions/require-changeset/` and `.github/rulesets/main.json`.
 - **Every PR adds a changeset:**
   - `pnpm changeset` when it changes what a package ships, naming each package
     it bumps;
   - `pnpm changeset --empty` when it only touches tooling, tests, or docs, which
     records no release[^changesets-empty].
-- **CI's `🦋 Changeset` job enforces it** with
-  `changeset status --since=<base> --output=<file>`, failing when the file's
+- **CI's `🦋 Changeset` job enforces it** through the kit's own
+  `require-changeset` action, which runs
+  `changeset status --since=<base> --output=<file>` and fails when the file's
   `changesets` list is empty.
   - The list holds the changesets the PR added or edited, read by changesets'
     own rules, so a file changesets ignores (`.changeset/drafts/x.md`,
@@ -51,16 +53,58 @@ verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
     changeset exists, so in this monorepo it passes every PR that touches only
     root files, and every PR before the first package lands.
 - **It skips the version PR (`changeset-release/main`) from this repo,** which
-  only consumes changesets; a fork's branch of that name is still checked.
-- **A Renovate PR (`renovate/*`) from this repo skips it only when it ships
-  nothing**, as `.github/scripts/renovate-ships.sh` decides.
-  - It ships a change when a package's `dependencies`, `optionalDependencies`,
-    `peerDependencies` or `engines` change, a `catalog:` entry they point to
-    included; then it needs a changeset that bumps a package, which the owner
-    adds to its branch.
-  - A dev dependency or root bump needs no changeset, since nothing published
-    changes.
-  - The script fails rather than answer "ships nothing" when it can't tell, so a
+  only consumes changesets, when its author is in the action's
+  `version-pr-authors` input, `github-actions[bot]` by default; a fork's or a
+  person's branch of that name is still checked.
+- **A Renovate PR from this repo skips it only when it ships nothing**, as the
+  action decides.
+  - It's a Renovate PR when its branch matches the action's `renovate-branches`
+    input, `renovate/**` by default, and its author is in `renovate-authors`,
+    `renovate[bot]` by default.
+  - **Rejected: matching the branch name alone,** as #12 had it, which let any
+    same-repo branch named `renovate/...` skip the changeset (#12's review); the
+    version PR is matched by author too (#5's review).
+  - **A package is versioned** by Changesets' own rules: it has a name and a
+    version, isn't in the config's `ignore`, and is public, or private while
+    `privatePackages.version` is on, as jj-kit's is, so its actions count.
+    - A package the PR deletes ships nothing, since no changeset can name it.
+    - Workspace packages are found as pnpm finds them, skipping `node_modules`
+      and `bower_components` folders.
+  - **A versioned package ships a change** when its `dependencies`,
+    `optionalDependencies`, `peerDependencies`, `engines` or entry-point fields
+    (`exports`, `main`, `bin`, `files`, `type`, `types` and the like) change, a
+    `catalog:` entry they point to included, or when a file it publishes
+    changes, such as an action's `action.yml` or a source fix pushed onto the
+    branch.
+    - A file is published when the package's `files` list includes it, dotfiles
+      included, or npm packs it anyway (a top-level README or license, the
+      `main` or a `bin` target), or, with no `files` list, always; an empty
+      `files: []` publishes only what npm packs anyway.
+    - **Any other file in a versioned package needs a changeset**, an empty one
+      included, as on any PR: a build input such as `tsconfig.json` can change
+      what ships even outside `files`, so the owner decides.
+      - **Rejected: treating files outside `files` as shipping nothing,** which
+        let a build-config change that alters `dist/` merge with no changeset
+        (#5's review).
+    - Then it needs a changeset that releases each such package, which the owner
+      adds to its branch; an empty one, one naming the package with `none`, or
+      one releasing another package doesn't count.
+    - **Rejected: judging by the manifests alone,** which let a Renovate bump of
+      an action's `uses:` line merge without releasing the action (#5's review).
+    - **Rejected: accepting any changeset for a non-manifest change,** which let
+      an empty one through (#5's review).
+  - A dev dependency, an unversioned private package's change, or a monorepo
+    root's bump needs no release, since nothing published changes; an
+    unversioned private package's other files still need some changeset.
+  - **In a single-package repo, the root is the package**, judged the same way:
+    a published root file needs a release when the root is versioned, and any
+    other root file but the lockfile, workspace file and `.github/` needs a
+    changeset.
+    - A workspace file that lists package globs makes the repo a monorepo, as
+      Changesets decides, even before a package matches them.
+  - **The actions need `@changesets/cli` 3 or later**, whose `privatePackages`
+    defaults they read, and fail on an older one.
+  - The action fails rather than answer "ships nothing" when it can't tell, so a
     broken check never skips a changeset.
   - **Rejected: skipping every Renovate PR,** as #12's plan first had it: a
     runtime dependency bump would merge without a release, so consumers would
@@ -83,13 +127,14 @@ verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
 ## Consequences
 
 - Docs-only and CI-only PRs still add a changeset.
-- #5 replaces the inline job with the kit's `require-changeset` action, which
-  should keep checking the `changesets` list rather than relying on
-  `changeset status`'s exit code.
+- Every consumer of `require-changeset` gets the same rule, so a repo's check no
+  longer drifts from this one.
+- A self-hosted Renovate that opens PRs as another login passes it in
+  `renovate-authors`, or its PRs are checked like any other.
 
 ## Links
 
 - #12, which added the job.
-- #5, which replaces it.
+- #5, which moved it into the `require-changeset` action.
 
 [^changesets-empty]: `changeset --empty` adds a changeset that bumps no package.

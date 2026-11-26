@@ -79,17 +79,81 @@ repo inherits
 ## 🎬 Actions
 
 - Composite actions, referenced as `jjloneman/jj-kit/actions/<name>`.
-- [Consuming the kit](docs/references/consuming.md) shows how to pin and use
-  each one.
+- Each has its own version, `CHANGELOG.md` and `<name>@<version>` tag.
+- They share code from `actions/lib`, which isn't an action; a release of it
+  releases both actions.
+- **Pin each by full commit SHA, with its tag in a comment:**
+
+  ```yaml
+  - uses: jjloneman/jj-kit/actions/require-changeset@<sha> # require-changeset@<version>
+  ```
+
+- **Run them after your own setup step**, which checks out the repo and installs
+  pnpm, Node 26 and the workspace, `@changesets/cli` 3 or later included.
+- [Consuming the kit](docs/references/consuming.md) shows how to wire each one.
 
 ### require-changeset
 
-- 🚧 Coming in #5: fails a PR that adds no changeset.
+- Fails a PR that adds or edits no changeset, judged by
+  `changeset status --output`, so an empty changeset passes.
+- **Skips, for a PR from the repo itself, never a fork:**
+  - the version PR, `changeset-release/<base>` from a `version-pr-authors`
+    login;
+  - a branch matching `skip-branches`;
+  - a Renovate PR that changes no versioned package's `dependencies`,
+    `optionalDependencies`, `peerDependencies` or `engines`, `catalog:` entries
+    included, and no other file a package ships.
+- **A Renovate PR that does change them** needs a changeset that releases each
+  package it ships.
+  - Versioned is Changesets' own rule: a package with a name and version, not in
+    the config's `ignore`, and public, or private while
+    `privatePackages.version` is on.
+  - A package ships a change when its dependencies, `engines`, entry points or
+    `files` change, or a file it publishes changes: one its `files` list
+    includes, a README or license, or its `main` or `bin` target, or any file
+    when it has no `files` list.
+  - Any other file in a versioned package, such as a build config, needs a
+    changeset, an empty one included.
+  - In a single-package repo, the root is judged the same way.
+- **Needs** a `pull_request` event, `contents: read`, a checkout with
+  `fetch-depth: 0`, a Linux runner, and `yq` v4 for Renovate PRs, which GitHub's
+  Ubuntu runners ship.
+
+| Input                | Default               | What it does                                                                       |
+| -------------------- | --------------------- | ---------------------------------------------------------------------------------- |
+| `base`               | `github.base_ref`     | The branch to diff against, as `origin/<base>`                                     |
+| `renovate-authors`   | `renovate[bot]`       | Newline-separated logins whose PRs from `renovate-branches` take the Renovate path |
+| `renovate-branches`  | `renovate/**`         | Newline-separated globs of Renovate's branches, matching its `branchPrefix`        |
+| `skip-branches`      | none                  | Newline-separated globs of head branches that skip the check                       |
+| `version-pr-authors` | `github-actions[bot]` | Newline-separated logins whose `changeset-release/<base>` PR is the version PR     |
 
 ### version-or-release
 
-- 🚧 Coming in #5: opens the rolling version PR, or publishes once it merges,
-  then labels and assigns the version PR.
+- Wraps `changesets/action`: keeps the rolling version PR open while changesets
+  are pending, then labels and assigns it.
+- **Publishes whenever no releasing changeset is pending**, so a version PR's
+  merge still publishes with an empty changeset left on `main`.
+  - It waits while a package it would release is still at `0.0.0`, so nothing is
+    published or tagged at `0.0.0`.
+- **Needs** a push to the release branch, `contents: write`,
+  `pull-requests: write`, `id-token: write` for npm trusted publishing, a Linux
+  runner, and the label in the repo.
+- With `GITHUB_TOKEN`, the repo turns on "Allow GitHub Actions to create and
+  approve pull requests", and the version PR's CI run waits for an approval
+  click (see
+  [Which token opens the version PR](docs/decisions/version-pr-token.md)).
+
+| Input            | Default                               | What it does                                |
+| ---------------- | ------------------------------------- | ------------------------------------------- |
+| `assignee`       | none                                  | The login to assign the version PR to       |
+| `commit-message` | `chore(release): 🚀 version packages` | The version PR's commit message             |
+| `github-token`   | required                              | The token that opens the PR and pushes tags |
+| `label`          | `🚀 release`                          | The label to add to the version PR          |
+| `pr-title`       | `chore(release): 🚀 version packages` | The version PR's title                      |
+| `publish-script` | none, which never publishes           | The command that builds and publishes       |
+
+- **Outputs** `pr-number`, `published` and `published-packages`, passed through
+  from `changesets/action`.
 
 ### setup
 
@@ -127,7 +191,8 @@ pnpm check
   - `pnpm changeset` for a change a package ships;
   - `pnpm changeset --empty` for one that releases nothing.
 - Each package lives in `packages/<name>` with its own `package.json` and
-  `tsconfig.json`.
+  `tsconfig.json`, and each action in `actions/<name>` with a private
+  `package.json`.
 - Shared dev dependency versions live in `pnpm-workspace.yaml`'s `catalog`;
   reference them as `catalog:`.
 - **A package that builds code has its own `tsdown.config.ts`.**
@@ -137,8 +202,8 @@ pnpm check
   - A JSON-only package, such as `kit-tsconfig`, has no build config, and its
     `lint:package` runs publint alone (#8).
 - Tests run as one Vitest workspace from the root, with a 100% coverage gate
-  over `packages/*/src`.
+  over `actions/*/src` and `packages/*/src`.
 - JSON keys, `package.json` included, stay alphabetized at every level;
   `pnpm lint:fix` sorts them.
 - Merging the rolling `chore(release): 🚀 version packages` PR publishes each
-  bumped package and tags it `<name>@<version>`.
+  bumped package and tags it, and each bumped action, `<name>@<version>`.

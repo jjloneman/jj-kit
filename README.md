@@ -148,6 +148,8 @@ repo inherits
     publish packages without their build output.
 - **Needs** a job with no write permissions, a Linux or macOS runner, and
   `@changesets/cli` 3 or later.
+- **Pass `cache: false` to `setup` in its job**, since it builds what's
+  published (see [setup](#setup)).
 
 | Input          | Default                            | What it does                                                                  |
 | -------------- | ---------------------------------- | ----------------------------------------------------------------------------- |
@@ -167,6 +169,8 @@ repo inherits
 - **Needs** a push to the release branch, `contents: write`,
   `pull-requests: write`, `id-token: write` for npm trusted publishing, and the
   label in the repo.
+- **Pass `cache: false` to `setup` in its job**, which holds those permissions
+  (see [setup](#setup)).
 - With `GITHUB_TOKEN`, the repo turns on "Allow GitHub Actions to create and
   approve pull requests", and the version PR's CI run waits for an approval
   click (see
@@ -190,7 +194,14 @@ repo inherits
 - Installs pnpm, Node and the frozen-lockfile dependency tree: the prelude every
   CI job that runs a pnpm script shares.
 - **pnpm's version comes from `packageManager`** in the root `package.json`, and
-  its store is cached; the install still links `node_modules` from it.
+  its store is cached unless `cache` is `false`; the install still links
+  `node_modules` from it.
+- **Pass `cache: false` in a job with write permissions or `id-token: write`, or
+  one that builds what's published**, such as both release jobs, so it never
+  installs from a store another job saved.
+  - It needs `setup` 0.2.0 or later; an older pin only warns about the unknown
+    input and keeps the cache on.
+  - A job that can request an OIDC token gets a warning while the cache is on.
 - **Keep any extra setup**, such as a browser install, as a local step after
   this one.
 
@@ -202,9 +213,10 @@ repo inherits
   - uses: jjloneman/jj-kit/actions/setup@<sha> # setup@<version>
   ```
 
-| Input          | Default | What it does                                                                          |
-| -------------- | ------- | ------------------------------------------------------------------------------------- |
-| `node-version` | `"26"`  | The Node to install; pass an older one only for a job that tests published code on it |
+| Input          | Default  | What it does                                                                          |
+| -------------- | -------- | ------------------------------------------------------------------------------------- |
+| `cache`        | `"true"` | Whether to restore and save the pnpm store cache; `false` in either release job       |
+| `node-version` | `"26"`   | The Node to install; pass an older one only for a job that tests published code on it |
 
 ## 📚 Design decisions
 

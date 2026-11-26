@@ -78,7 +78,8 @@ okf_version: "0.2"
   `release.yml` builds and packs in a job with `contents: read` alone, through
   `pack-release` and `changesets/action/pack`, and only a second job, which
   installs but never builds, holds `contents: write`, `pull-requests: write` and
-  `id-token: write` to open the version PR or publish the packed tarballs.
+  `id-token: write` to open the version PR or publish the packed tarballs;
+  neither restores the pnpm store cache.
 
 # About this bundle
 

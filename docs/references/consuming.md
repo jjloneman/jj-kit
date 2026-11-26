@@ -22,8 +22,8 @@ tags:
   - setup-action
   - version-pr
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T22:04:04Z }
-verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T23:48:28Z }
+verified: { by: human:jjloneman, at: 2026-11-26T23:57:25Z }
 ---
 
 # Consuming the kit
@@ -174,6 +174,19 @@ verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
     [Why the kit supports Node 26 only](../decisions/node-26-only.md)).
   - A repo whose `devEngines` refuses older Node, as jj-kit's does, can't run
     such a job.
+- **It caches the pnpm store**, restoring it and saving it on a miss after the
+  job's own steps ran.
+  - **A job with write permissions or `id-token: write`, or one that builds
+    what's published, passes `cache: false`**, such as both release jobs below.
+  - It needs `setup` 0.2.0 or later; an older pin only warns about the unknown
+    input and keeps the cache on.
+  - A store saved by a job that ran every dev tool could otherwise reach the
+    published build or the job that can push and publish, and as of
+    `pnpm/action-setup` v6.1.1 there's no restore-only mode (see
+    [Why the release builds without write access](../decisions/unprivileged-release-build.md)).
+  - A job that can request an OIDC token gets a warning while the cache is on;
+    one holding only `contents: write` doesn't, since nothing in its environment
+    shows it.
 - **Keep extra setup**, such as a browser install or a second lockfile, as a
   local step after this one.
 - **Delete** the repo's own `.github/actions/setup` once every job uses the
@@ -207,6 +220,8 @@ verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
           persist-credentials: false
 
       - uses: jjloneman/jj-kit/actions/setup@<sha> # setup@<version>
+        with:
+          cache: false
 
       - id: pack
         uses: jjloneman/jj-kit/actions/pack-release@<sha> # pack-release@<version>
@@ -227,6 +242,8 @@ verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
           persist-credentials: false
 
       - uses: jjloneman/jj-kit/actions/setup@<sha> # setup@<version>
+        with:
+          cache: false
 
       - uses: jjloneman/jj-kit/actions/version-or-release@<sha> # version-or-release@<version>
         with:
@@ -239,6 +256,8 @@ verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
 - **Give the plan job no write permission**: its build runs every dev
   dependency's code (see
   [Why the release builds without write access](../decisions/unprivileged-release-build.md)).
+- **Pass `cache: false` to `setup` in both jobs**, as the [setup](#setup)
+  section says.
 - **Fetch the tags in the plan job's checkout**, with `fetch-tags: true`.
   - Without them, Changesets asks `git ls-remote`, which fails in a private repo
     once `persist-credentials` is off, so every private package looks untagged

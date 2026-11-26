@@ -32,8 +32,9 @@ sources:
   - id: okf-tools-changelog-formatter
     resource: https://github.com/jjloneman/okf-tools/blob/main/docs/decisions/changelog-formatter.md
     title: okf-tools, How changelog lines are built
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T23:18:56Z }
+verified: { by: human:jjloneman, at: 2026-11-26T01:05:37Z }
 ---
 
 # How changelog lines are built

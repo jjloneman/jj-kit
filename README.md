@@ -80,16 +80,18 @@ repo inherits
 
 - Composite actions, referenced as `jjloneman/jj-kit/actions/<name>`.
 - Each has its own version, `CHANGELOG.md` and `<name>@<version>` tag.
-- They share code from `actions/lib`, which isn't an action; a release of it
-  releases both actions.
+- `require-changeset` and `version-or-release` share code from `actions/lib`,
+  which isn't an action; a release of it releases both.
 - **Pin each by full commit SHA, with its tag in a comment:**
 
   ```yaml
   - uses: jjloneman/jj-kit/actions/require-changeset@<sha> # require-changeset@<version>
   ```
 
-- **Run them after your own setup step**, which checks out the repo and installs
-  pnpm, Node 26 and the workspace, `@changesets/cli` 3 or later included.
+- **Run `setup` first**, after checking out the repo, so the others find pnpm,
+  Node 26 and the workspace installed.
+  - It installs only what the repo's lockfile lists, so the repo itself depends
+    on `@changesets/cli` 3 or later.
 - [Consuming the kit](docs/references/consuming.md) shows how to wire each one.
 
 ### require-changeset
@@ -157,8 +159,24 @@ repo inherits
 
 ### setup
 
-- 🚧 Coming in #6: installs pnpm and Node, then the frozen-lockfile dependency
-  tree.
+- Installs pnpm, Node and the frozen-lockfile dependency tree: the prelude every
+  CI job that runs a pnpm script shares.
+- **pnpm's version comes from `packageManager`** in the root `package.json`, and
+  its store is cached; the install still links `node_modules` from it.
+- **Keep any extra setup**, such as a browser install, as a local step after
+  this one.
+
+  ```yaml
+  - uses: actions/checkout@<sha> # v7.0.1
+    with:
+      persist-credentials: false
+
+  - uses: jjloneman/jj-kit/actions/setup@<sha> # setup@<version>
+  ```
+
+| Input          | Default | What it does                                                                          |
+| -------------- | ------- | ------------------------------------------------------------------------------------- |
+| `node-version` | `"26"`  | The Node to install; pass an older one only for a job that tests published code on it |
 
 ## 📚 Design decisions
 

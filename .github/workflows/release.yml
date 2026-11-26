@@ -44,7 +44,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: ./.github/actions/setup
+      - uses: ./actions/setup
 
       # Publishes whenever no releasing changeset is pending, so a version
       # PR's merge with an empty changeset left on `main` still publishes.

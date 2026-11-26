@@ -19,16 +19,18 @@ tags:
   - pull-requests
   - releases
   - renovate
+  - setup-action
   - version-pr
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T05:03:12Z }
-verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T19:09:51Z }
+verified: { by: human:jjloneman, at: 2026-11-26T19:29:41Z }
 ---
 
 # Consuming the kit
 
-- **As of 2026-11-26,** `kit-changesets-changelog` and the `require-changeset`
-  and `version-or-release` actions are built; no other package or action is.
+- **As of 2026-11-26,** `kit-changesets-changelog` and the `require-changeset`,
+  `setup` and `version-or-release` actions are built; no other package or action
+  is.
 - Each section below is filled in by the PR that ships it.
 - For a reader in another repo: what to install, what to write, and what to
   delete.
@@ -113,9 +115,10 @@ verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
   - **Renovate's built-in `github-actions` manager can't update these pins**, so
     bump them by hand until the kit ships a Renovate preset for them.
 
-- **Run each action after your own setup step**, which checks out the repo and
-  installs pnpm, Node 26 and the workspace, `@changesets/cli` 3 or later
-  included.
+- **Run `setup` before the others**, after the checkout, so they find pnpm, Node
+  26 and the workspace installed.
+  - It installs only what the repo's lockfile lists, so the repo itself depends
+    on `@changesets/cli` 3 or later.
 
 ### require-changeset
 
@@ -135,7 +138,7 @@ verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
           fetch-depth: 0
           persist-credentials: false
 
-      # Your setup step: pnpm, Node 26 and `pnpm install`.
+      - uses: jjloneman/jj-kit/actions/setup@<sha> # setup@<version>
       - uses: jjloneman/jj-kit/actions/require-changeset@<sha> # require-changeset@<version>
   ```
 
@@ -150,7 +153,31 @@ verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
 
 ### setup
 
-- 🚧 Coming in #6.
+- **Replace the repo's own setup steps**, or its local `.github/actions/setup`,
+  with the action, right after the checkout:
+
+  ```yaml
+  steps:
+    - uses: actions/checkout@<sha> # v7.0.1
+      with:
+        persist-credentials: false
+
+    - uses: jjloneman/jj-kit/actions/setup@<sha> # setup@<version>
+    - run: pnpm test
+  ```
+
+- **It reads pnpm's version from `packageManager`** in the root `package.json`,
+  so it takes no pnpm input.
+- **It installs Node 26 unless told otherwise.**
+  - Only a job that tests the repo's own published code on an older Node passes
+    `node-version`, such as `"24"` (see
+    [Why the kit supports Node 26 only](../decisions/node-26-only.md)).
+  - A repo whose `devEngines` refuses older Node, as jj-kit's does, can't run
+    such a job.
+- **Keep extra setup**, such as a browser install or a second lockfile, as a
+  local step after this one.
+- **Delete** the repo's own `.github/actions/setup` once every job uses the
+  action.
 
 ### version-or-release
 
@@ -174,7 +201,7 @@ verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
         with:
           persist-credentials: false
 
-      # Your setup step: pnpm, Node 26 and `pnpm install`.
+      - uses: jjloneman/jj-kit/actions/setup@<sha> # setup@<version>
       - uses: jjloneman/jj-kit/actions/version-or-release@<sha> # version-or-release@<version>
         with:
           assignee: <login>

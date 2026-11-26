@@ -1,0 +1,51 @@
+name: 🧰 Set up Node and install
+description: >-
+  Installs pnpm, Node and the frozen-lockfile dependency tree; the prelude
+  every CI job that runs a pnpm script shares.
+
+# Needs, from the caller:
+#
+# - a checkout of the repo, with `packageManager` in its root `package.json`,
+#   which picks the pnpm version;
+#
+# - a `pnpm-lock.yaml` that matches the workspace, since the install is
+#   frozen.
+inputs:
+  node-version:
+    default: "26"
+    description: >-
+      The Node to install; pass an older one only for a job that tests the
+      repo's own published code on it.
+
+runs:
+  using: composite
+  steps:
+    # An empty input, such as an unset matrix value, would make setup-node
+    # install nothing and keep the runner's own Node, so fail first.
+    - name: 🔍 Check the Node version input
+      env:
+        NODE_VERSION: ${{ inputs.node-version }}
+      shell: bash
+      run: |
+        if [[ -z "${NODE_VERSION//[[:space:]]/}" ]]; then
+          echo "::error title=setup::node-version is empty; pass a version such as \"26\", or leave it out."
+          exit 1
+        fi
+
+    # `cache: true` restores the pnpm store; the `pnpm install` below still has
+    # to link node_modules out of it, which no store cache can remove.
+    - name: 📦 Install pnpm
+      uses: pnpm/action-setup@v6.1.1
+      with:
+        cache: true
+
+    # Defaults to Node 26, the one the kit supports; see
+    # docs/decisions/node-26-only.md.
+    - name: 🟢 Install Node
+      uses: actions/setup-node@v7.1.0
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: 🔗 Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile

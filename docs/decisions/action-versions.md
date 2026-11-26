@@ -16,6 +16,7 @@ tags:
   - releases
   - renovate
   - semver
+  - setup-action
   - workspace
 sources:
   - id: changesets-config
@@ -28,8 +29,8 @@ sources:
     resource: https://docs.renovatebot.com/modules/manager/regex/
     title: Renovate, the regex custom manager
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T03:14:24Z }
-verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T19:09:51Z }
+verified: { by: human:jjloneman, at: 2026-11-26T19:29:41Z }
 ---
 
 # How the actions are versioned
@@ -58,8 +59,11 @@ verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
     wouldn't say which action it is.
 - **Code the actions share lives in `actions/lib`**, a private package that
   isn't an action, which they import by relative path.
-  - Each action depends on it as `workspace:*`, so a release of `lib` also
-    patch-releases both actions, whose behavior it changes.
+  - Each action that uses it, `require-changeset` and `version-or-release`,
+    depends on it as `workspace:*`, so a release of `lib` also patch-releases
+    both, whose behavior it changes.
+  - `setup`, which runs no code of its own, doesn't depend on it, so a `lib`
+    release leaves it alone.
   - `lib` is tagged `actions-lib@<version>` like the actions, though nothing
     pins it.
   - **Rejected: importing one action's code from the other**, which would change

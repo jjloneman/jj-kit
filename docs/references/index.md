@@ -43,6 +43,7 @@ okf_version: "0.2"
 - `pull-requests`: What every pull request must carry.
 - `releases`: Versioning and publishing.
 - `renovate`: Renovate's dependency updates.
+- `setup-action`: The action that installs pnpm, Node and dependencies.
 - `testing`: Tests and the coverage gate.
 - `type-stripping`: Node running TypeScript by stripping its types.
 - `version-pr`: The rolling `chore(release): 🚀 version packages` PR.

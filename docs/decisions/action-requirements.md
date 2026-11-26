@@ -20,8 +20,8 @@ sources:
     resource: https://nodejs.org/api/path.html#pathmatchesglobpath-pattern
     title: Node.js, path.matchesGlob
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T04:26:32Z }
-verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T19:09:51Z }
+verified: { by: human:jjloneman, at: 2026-11-26T19:29:41Z }
 ---
 
 # What the actions require of a consumer
@@ -38,6 +38,8 @@ verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
   `actions/require-changeset/src/main.ts`.
 - **Each action runs after the consumer's own setup step**: a checkout, Node 26
   on `PATH`, pnpm, and the workspace installed.
+  - The kit's `setup` action is that step, run right after the checkout; a
+    consumer may keep its own instead.
   - **Rejected: installing Node and pnpm inside each action,** which would
     duplicate the consumer's setup, and the kit's own `setup` action (#6).
 - **Node 26 or later**, since the actions' scripts are TypeScript that Node runs

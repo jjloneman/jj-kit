@@ -1,6 +1,3 @@
-# Adapted from okf-tools' release workflow until the kit ships its own actions.
-#
-# - #5 replaces these steps with the kit's `version-or-release` action.
 name: 🚀 Release
 
 on:
@@ -17,8 +14,8 @@ on:
 # - It doesn't queue: GitHub keeps one pending run per group and cancels it
 #   when a newer one arrives, which can drop the run that should publish.
 #
-# - So a version PR's merge can go unpublished; the `workflow_dispatch` above
-#   is the way back, and #5 replaces this.
+# - The next run on `main` with no releasing changeset pending publishes what
+#   was dropped, and the `workflow_dispatch` above starts one by hand.
 concurrency:
   cancel-in-progress: false
   group: ${{ github.workflow }}
@@ -48,20 +45,10 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
 
-      # Publishes only when no changeset is pending, so a version PR's merge
-      # with an empty one left on `main` waits for the next version PR's.
-      - id: changesets
-        uses: changesets/action@v2.1.2
+      # Publishes whenever no releasing changeset is pending, so a version
+      # PR's merge with an empty changeset left on `main` still publishes.
+      - uses: ./actions/version-or-release
         with:
-          commit-message: "chore(release): 🚀 version packages"
-          pr-title: "chore(release): 🚀 version packages"
+          assignee: jjloneman
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           publish-script: pnpm release
-
-      # changesets/action has no assignee or label option, so add them here.
-      - if: ${{ steps.changesets.outputs.pr-number != '' }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ steps.changesets.outputs.pr-number }}
-        run: >-
-          gh pr edit "$PR_NUMBER" --add-assignee jjloneman
-          --add-label "🚀 release" --repo "$GITHUB_REPOSITORY"

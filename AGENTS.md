@@ -67,6 +67,8 @@
 - **Named functions are `function` declarations**; arrows are for callbacks and
   closures.
 - **Braces always**, even around a one-line `if` body.
+- **An unused name keeps a `_` prefix** rather than being dropped, such as
+  `const [_file, args] = call`, so it still says what it is.
 - **Semantic names:**
   - module constants are `SCREAMING_SNAKE_CASE`;
   - boolean names read as questions, opening with an auxiliary verb (`is`,
@@ -95,6 +97,10 @@
 - **A doc comment on every function**, exported or not, with an `@returns` when
   it returns a value.
 - **Every property of a named type gets its own doc comment.**
+  - A doc comment that fits on one line within 80 columns, `@example` included,
+    is written on one line.
+- **A positional parameter gets an `@param` tag**, such as one an outside caller
+  forces.
 - **Document a destructured object parameter on its type literal's properties**,
   never with a dotted `@param options.key`.
   - An editor shows a property's comment at the call site, but nothing for a
@@ -207,6 +213,8 @@
 - A branch nothing can reach is dead code to delete, not a line to exempt; no
   coverage-ignore comments.
 - **Test data is fabricated.** Never copy a real repo's files into a test.
+- **`vi.mock` takes `import("<module>")`, not the module's path as a string**,
+  so the factory's return is typed against the real module.
 - **Shape:** `describe("<unit>")` → `test("<scenario>")`.
   - `// Given` / `// When` / `// Then` comments, each followed by a hyphen and
     what that phase holds.

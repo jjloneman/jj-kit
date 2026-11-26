@@ -13,8 +13,8 @@ description: >-
 # - Node 26 on `PATH` and the workspace installed, `@changesets/cli` 3 or
 #   later included, from the caller's own setup step;
 #
-# - a Linux runner: it runs `pnpm` and `git` without a shell, and its glob
-#   matching ignores case on macOS;
+# - a Linux or macOS runner, since it runs `pnpm` and `git` without a shell,
+#   which fails on Windows;
 #
 # - `yq` v4 for a Renovate PR, which GitHub's Ubuntu runners ship.
 inputs:

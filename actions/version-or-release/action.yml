@@ -14,8 +14,8 @@ description: >-
 # - a checkout, and Node 26 and pnpm with the workspace installed,
 #   `@changesets/cli` 3 or later included, from the caller's own setup step;
 #
-# - a Linux runner: the script runs `pnpm` without a shell, and its glob
-#   matching ignores case on macOS;
+# - a Linux or macOS runner, since the script runs `pnpm` without a shell,
+#   which fails on Windows;
 #
 # - the `label` in the repo, or the step that labels the version PR fails.
 inputs:

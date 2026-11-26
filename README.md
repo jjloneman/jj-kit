@@ -116,8 +116,8 @@ repo inherits
     changeset, an empty one included.
   - In a single-package repo, the root is judged the same way.
 - **Needs** a `pull_request` event, `contents: read`, a checkout with
-  `fetch-depth: 0`, a Linux runner, and `yq` v4 for Renovate PRs, which GitHub's
-  Ubuntu runners ship.
+  `fetch-depth: 0`, a Linux or macOS runner, and `yq` v4 for Renovate PRs, which
+  GitHub's Ubuntu runners ship.
 
 | Input                | Default               | What it does                                                                       |
 | -------------------- | --------------------- | ---------------------------------------------------------------------------------- |
@@ -137,7 +137,7 @@ repo inherits
     published or tagged at `0.0.0`.
 - **Needs** a push to the release branch, `contents: write`,
   `pull-requests: write`, `id-token: write` for npm trusted publishing, a Linux
-  runner, and the label in the repo.
+  or macOS runner, and the label in the repo.
 - With `GITHUB_TOKEN`, the repo turns on "Allow GitHub Actions to create and
   approve pull requests", and the version PR's CI run waits for an approval
   click (see

@@ -135,6 +135,7 @@ jobs:
 
           cli=$(bash actions/version-or-release/resolve-changesets-cli.sh \
             "release install")
+
           node "$cli" version
 
   test:

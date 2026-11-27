@@ -15,7 +15,7 @@ tags:
   - packages
   - renovate
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T04:58:39Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T07:26:50Z }
 verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
 ---
 
@@ -42,7 +42,8 @@ verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
   - **Rejected: a central runner that lints every repo.** Repos would stop being
     self-contained, and couldn't run their own checks locally.
 - **CI steps ship as composite GitHub Actions** in `actions/<name>`, which a
-  repo pins by SHA.
+  repo pins by SHA, and the kit's Renovate preset keeps those pins up to date
+  (#24).
   - So a check such as the changeset check is one shared action rather than a
     step copied into each CI file;
     [Why every PR adds a changeset](changeset-every-pr.md) holds the rule
@@ -67,8 +68,8 @@ verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
   [each package is versioned on its own](independent-versions.md) to keep a
   break scoped to one package.
 - Every kit release sits out consumers' dependency moratorium unless they
-  exclude `@jjloneman/*`, as [Consuming the kit](../references/consuming.md)
-  shows.
+  exclude `@jjloneman/*`, and, in Renovate, the actions' `jjloneman/jj-kit` too,
+  as [Consuming the kit](../references/consuming.md) shows.
 - Until each package or action ships, jj-kit runs on copies from okf-tools, each
   headed with the issue that replaces it: the ESLint config and its local rule,
   the Prettier config, the root `tsconfig.json`, the git hooks and the setup
@@ -80,5 +81,6 @@ verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
 
 - #1, the roadmap.
 - #3, which records this decision.
+- #24, which adds the Renovate preset for the actions' pins.
 - #31, which makes the changelog formatter a root dependency under
   `install: root`.

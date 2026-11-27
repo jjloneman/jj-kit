@@ -12,7 +12,7 @@ tags:
   - packages
   - renovate
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T18:01:48Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T07:26:50Z }
 verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
 ---
 
@@ -43,7 +43,7 @@ verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
 
 - The shared `kit-` prefix sorts the packages together in a `package.json` and
   on npm.
-- Renovate can group every kit update by the `@jjloneman/kit-` prefix.
+- Renovate can group every kit package update by the `@jjloneman/kit-` prefix.
 - The existing scope needs no new npm organization, and is already excluded from
   the owner's dependency moratorium as `@jjloneman/*`.
 
@@ -51,6 +51,9 @@ verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
 
 - The owner's other `@jjloneman` packages, such as okf-tools, share the scope
   but not the prefix, so a prefix rule picks out only the kit.
+- The kit's actions aren't npm packages, so their Renovate updates carry the
+  package name `jjloneman/jj-kit` instead, and a rule for every kit update names
+  both (#24).
 
 ## Links
 

@@ -28,6 +28,7 @@
           { "context": "🦋 Changeset", "integration_id": 15368 },
           { "context": "🧹 Lint & format", "integration_id": 15368 },
           { "context": "📦 Package", "integration_id": 15368 },
+          { "context": "🚀 Release install", "integration_id": 15368 },
           { "context": "🧪 Tests", "integration_id": 15368 },
           { "context": "🔷 Typecheck", "integration_id": 15368 }
         ],

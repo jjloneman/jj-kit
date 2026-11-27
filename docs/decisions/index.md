@@ -20,8 +20,7 @@ okf_version: "0.2"
 - [How the actions are versioned](action-versions.md) - Each action is a private
   workspace package under `actions/`, which Changesets versions, changelogs and
   tags as `<name>@<version>` with nothing published; consumers pin it by SHA
-  with that tag in a comment, and a Renovate preset to update those pins is a
-  follow-up.
+  with that tag in a comment, which the kit's Renovate preset keeps up to date.
 - [How the monorepo is built](workspace-tooling.md) - A plain pnpm workspace
   with Changesets, and no monorepo framework such as Nx, Turborepo or Lerna;
   shared versions live in a pnpm catalog, packages depend on each other as

@@ -8,8 +8,9 @@ okf_version: "0.2"
   actions it ships and what each depends on, and how a changeset becomes an npm
   release and a git tag.
 - [Consuming the kit](consuming.md) - How a repo installs and wires each kit
-  package and action, pins actions by SHA with a version comment, and excludes
-  `@jjloneman/*` from its own dependency moratorium.
+  package and action, pins actions by SHA with a version comment that the kit's
+  Renovate preset updates, and excludes the kit from its own dependency
+  moratorium.
 
 # About this bundle
 

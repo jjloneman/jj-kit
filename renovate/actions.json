@@ -1,0 +1,30 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "jjloneman/jj-kit/actions/{{{action}}}",
+      "depTypeTemplate": "action",
+      "description": "Update jj-kit action pins written as `@<sha> # <name>@<version>`, from that action's own `<name>@<version>` tags.",
+      "extractVersionTemplate": "^{{{action}}}@(?<version>.+)$",
+      "managerFilePatterns": [
+        "/(^|/)(workflow-templates|\\.(?:github|gitea|forgejo)/(?:workflows|actions))/.+\\.ya?ml$/",
+        "/(^|/)action\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "uses:[ \\t]*['\"]?jjloneman/jj-kit/actions/(?<action>[\\w-]+)@(?<currentDigest>[0-9a-f]{40})['\"]?[ \\t]+#[ \\t]*[\\w.-]+@(?<currentValue>\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?)(?:$|[^\\w.+-])"
+      ],
+      "packageNameTemplate": "jjloneman/jj-kit"
+    }
+  ],
+  "description": "Keep jjloneman/jj-kit action pins up to date, which Renovate's built-in github-actions manager can't read.",
+  "packageRules": [
+    {
+      "description": "Leave jj-kit's actions to the custom manager above, so no line is updated twice.",
+      "enabled": false,
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["jjloneman/jj-kit", "jjloneman/jj-kit/**"]
+    }
+  ]
+}

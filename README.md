@@ -89,6 +89,9 @@ repo inherits
   - uses: jjloneman/jj-kit/actions/require-changeset@<sha> # require-changeset@<version>
   ```
 
+- **Let Renovate update the pins** by extending the kit's preset,
+  `github>jjloneman/jj-kit//renovate/actions`, since Renovate's built-in
+  `github-actions` manager can't read them.
 - **Run `setup` first**, after checking out the repo, so the others find pnpm,
   Node 26 and the workspace installed.
   - It installs only what the repo's lockfile lists, so the repo itself depends

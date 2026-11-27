@@ -170,6 +170,9 @@ repo inherits
 - **Needs** a push to the release branch, `contents: write`,
   `pull-requests: write`, `id-token: write` for npm trusted publishing, and the
   label in the repo.
+- **It checks first that `@changesets/cli` resolves from the repo root**, as
+  Changesets' sub-actions resolve it, and fails naming `install: root` and the
+  root's `dependencies` when it doesn't.
 - **Pass `cache: false` to `setup` in its job**, which holds those permissions
   (see [setup](#setup)).
 - **In a workspace, pass `install: root` too**, so the job installs only the

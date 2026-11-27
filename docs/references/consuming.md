@@ -3,8 +3,8 @@ type: Reference
 title: Consuming the kit
 description:
   How a repo installs and wires each kit package and action, pins actions by SHA
-  with a version comment, and excludes `@jjloneman/*` from its own dependency
-  moratorium.
+  with a version comment that the kit's Renovate preset updates, and excludes
+  the kit from its own dependency moratorium.
 tags:
   - actions
   - changelog
@@ -22,7 +22,7 @@ tags:
   - setup-action
   - version-pr
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T05:57:29Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T07:13:31Z }
 verified: { by: human:jjloneman, at: 2026-11-27T06:09:56Z }
 ---
 
@@ -62,6 +62,24 @@ verified: { by: human:jjloneman, at: 2026-11-27T06:09:56Z }
   minimumReleaseAge: 10080
   minimumReleaseAgeExclude:
     - "@jjloneman/*"
+  ```
+
+- **A repo whose Renovate config sets `minimumReleaseAge` exempts the kit there
+  too**, since Renovate doesn't read pnpm's exclusion: the packages by
+  `@jjloneman/*`, and the actions, whose updates come from git tags, by
+  `jjloneman/jj-kit`.
+  - Put the rule last in `packageRules`, since a later rule that sets
+    `minimumReleaseAge` wins.
+
+  ```json
+  {
+    "packageRules": [
+      {
+        "matchPackageNames": ["@jjloneman/*", "jjloneman/jj-kit"],
+        "minimumReleaseAge": "0 days"
+      }
+    ]
+  }
   ```
 
 - The kit's own dependencies still go through the floor, since they come from
@@ -124,7 +142,30 @@ verified: { by: human:jjloneman, at: 2026-11-27T06:09:56Z }
   - Each action has its own `<name>@<version>` tag and `CHANGELOG.md` (see
     [How the actions are versioned](../decisions/action-versions.md)).
   - **Renovate's built-in `github-actions` manager can't update these pins**, so
-    bump them by hand until the kit ships a Renovate preset for them.
+    extend the kit's preset, which turns that manager off for the kit's actions
+    and updates the SHA and the comment together:
+
+    ```json
+    { "extends": ["github>jjloneman/jj-kit//renovate/actions"] }
+    ```
+
+  - **Only a pin in that form gets updates**, `@<sha> # <name>@<x.y.z>` on one
+    line, quotes allowed; the preset turns the built-in manager off for every
+    kit pin, so one with no comment, or a comment in another form, never moves.
+  - **The comment's name must match the action in the path**: Renovate looks up
+    the path's action and doesn't check the comment, so
+    `setup@<sha> # pack-release@0.3.0` would get `setup`'s version under
+    `pack-release`'s name.
+  - **Its updates come from the `custom.regex` manager**, with the package name
+    `jjloneman/jj-kit` and the dep type `action`.
+    - A `packageRules` entry keyed on `matchManagers: ["github-actions"]`
+      doesn't reach them; key it on `matchDepTypes: ["action"]` instead, which
+      both managers set, or give the kit's pins a rule of their own with
+      `matchPackageNames: ["jjloneman/jj-kit"]`.
+    - A repo that sets `enabledManagers` lists `custom.regex` in it, or the
+      kit's pins get no updates and no warning.
+  - The preset is read from jj-kit's `main`, unversioned, so a change to it
+    reaches every consumer on Renovate's next run.
 
 - **Run `setup` before the others**, after the checkout, so they find pnpm, Node
   26 and the workspace installed.

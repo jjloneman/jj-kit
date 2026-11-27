@@ -15,13 +15,14 @@ tags:
   - npm
   - packages
   - releases
+  - renovate
   - setup-action
   - testing
   - type-stripping
   - version-pr
   - workspace
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T05:35:15Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T06:50:03Z }
 verified: { by: human:jjloneman, at: 2026-11-27T06:09:56Z }
 ---
 
@@ -52,6 +53,8 @@ verified: { by: human:jjloneman, at: 2026-11-27T06:09:56Z }
     actions, `pnpm install` and `gh`.
   - `actions/lib/` holds the code `pack-release` and `require-changeset` share,
     imported by relative path; it's a private package, but not an action.
+- `renovate/actions.json`: the Renovate preset that updates consumers' action
+  pins, read from `main` with no version of its own.
 - `docs/decisions/` and `docs/references/`: the two OKF bundles.
 - `.changeset/`: pending changesets and the Changesets config.
 - `.github/`: `workflows/ci.yml`, `workflows/release.yml` and the ruleset

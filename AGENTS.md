@@ -58,6 +58,10 @@
 - `.github/`:
   - `workflows/` — `ci.yml` and `release.yml`;
   - `rulesets/main.json` — protects `main`.
+- `renovate/actions.json` — the Renovate preset that updates consumers' action
+  pins, extended as `github>jjloneman/jj-kit//renovate/actions`.
+  - Renovate reads it from `main`, unversioned, so a change to it reaches every
+    consumer at once; its PR takes an empty changeset.
 - `.githooks/` — the `pre-commit` and `pre-push` hooks (#11 replaces them).
 - `eslint-rules/` — the local `no-dotted-jsdoc-param` rule, loaded by
   `eslint.config.ts` (#9 replaces it).

@@ -10,6 +10,7 @@ tags:
   - actions
   - changesets
   - ci
+  - pnpm
   - pull-requests
   - releases
   - renovate
@@ -20,7 +21,7 @@ sources:
     resource: https://github.com/changesets/changesets/blob/main/docs/command-line-options.md
     title: Changesets, command line options
 status: draft
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T02:09:19Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T02:46:12Z }
 verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
 ---
 
@@ -116,7 +117,7 @@ verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
           bump through with an empty changeset whenever the submodule wasn't
           checked out (#27's review).
       - A failed `pnpm pack` fails the check with pnpm's own error, then the
-        pnpm it needs; a warning pnpm prints before or after the JSON is
+        pnpm version it needs; a warning pnpm prints before or after the JSON is
         skipped.
       - **Rejected: copying npm-packlist's rules by hand** (the `files` list,
         `!` excludes, dotfiles, the README and license npm always packs, the

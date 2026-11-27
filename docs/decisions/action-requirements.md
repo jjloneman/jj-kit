@@ -4,13 +4,14 @@ title: What the actions require of a consumer
 description:
   The kit's actions run on a Linux or macOS runner after the consumer's own
   setup step, with Node 26, pnpm, `@changesets/cli` 3 or later and, for a
-  Renovate PR, `yq` v4; they fail clearly when Node or the Changesets CLI is too
-  old, rather than bringing their own.
+  Renovate PR, pnpm 10.26 or later and `yq` v4; they fail clearly when Node or
+  the Changesets CLI is too old, rather than bringing their own.
 tags:
   - actions
   - changesets
   - consumers
   - node
+  - pnpm
   - runners
   - setup-action
   - shell
@@ -20,7 +21,7 @@ sources:
     resource: https://nodejs.org/api/path.html#pathmatchesglobpath-pattern
     title: Node.js, path.matchesGlob
 status: draft
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T01:03:07Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T02:46:12Z }
 verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
 ---
 
@@ -85,8 +86,9 @@ verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
 
 - Failing on a too-old tool, with a message naming it, is cheaper than a check
   that quietly answers wrong.
-- Every requirement but `yq` is something a kit consumer already has, since its
-  own tooling runs on Node 26 and pnpm.
+- Every requirement but `yq`, and the pnpm 10.26 floor on an older pnpm, is
+  something a kit consumer already has, since its own tooling runs on Node 26
+  and pnpm.
 
 ## Consequences
 

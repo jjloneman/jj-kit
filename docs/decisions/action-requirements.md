@@ -19,8 +19,8 @@ sources:
   - id: node-matches-glob
     resource: https://nodejs.org/api/path.html#pathmatchesglobpath-pattern
     title: Node.js, path.matchesGlob
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T21:37:48Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T01:03:07Z }
 verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
 ---
 
@@ -34,8 +34,9 @@ verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
 
 ## Decision
 
-- **As of 2026-11-26,** from `actions/*/action.yml`, `actions/lib/`,
-  `actions/pack-release/src/` and `actions/require-changeset/src/main.ts`.
+- **As of 2026-11-27,** from `actions/*/action.yml`, `actions/lib/`,
+  `actions/pack-release/src/`, and `main.ts` and `readers.ts` in
+  `actions/require-changeset/src/`.
 - **Each action runs after the consumer's own setup step**: a checkout, Node 26
   on `PATH`, pnpm, and the workspace installed.
   - The kit's `setup` action is that step, run right after the checkout; a
@@ -67,6 +68,13 @@ verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
     on the claim that Node's `path.matchesGlob` ignores case on macOS; checked
     on macOS on 2026-11-26, it doesn't, so macOS matches like
     Linux[^node-matches-glob].
+- **pnpm 10.26 or later for a Renovate PR**, whose `pack --dry-run` lists what
+  each package publishes (#27).
+  - As of 2026-11-27, pnpm's docs mark `--dry-run` as added in 10.26.0.
+  - A failed `pnpm pack` fails the check with a message naming that floor, so an
+    older pnpm that rejects `--dry-run` fails rather than pass it; that it
+    rejects it is assumed, not checked.
+  - The kit itself runs on pnpm 12.
 - **`yq` v4 for a Renovate PR**, which `require-changeset` uses to read
   `pnpm-workspace.yaml`; GitHub's Ubuntu runners ship it.
   - **Rejected: a YAML parser dependency,** since the actions run from the
@@ -91,6 +99,7 @@ verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
 - #5, which built the actions and settled this.
 - #6, the `setup` action consumers run first.
 - #23, which added `pack-release`.
+- #27, which added the pnpm floor for Renovate PRs.
 
 [^node-matches-glob]:
     `path.posix.matchesGlob` matches case-sensitively; on macOS,

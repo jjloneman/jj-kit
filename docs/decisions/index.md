@@ -39,7 +39,7 @@ okf_version: "0.2"
   actions run on a Linux or macOS runner after the consumer's own setup step,
   with Node 26, pnpm, `@changesets/cli` 3 or later and, for a Renovate PR, pnpm
   10.26 or later and `yq` v4; they fail clearly when Node or the Changesets CLI
-  is too old, rather than bringing their own.
+  is too old or missing, rather than bringing their own.
 - [Which token opens the version PR](version-pr-token.md) - The rolling version
   PR is opened with the workflow's own `GITHUB_TOKEN`, so its CI run needs one
   approval click per release and each repo allows GitHub Actions to create pull

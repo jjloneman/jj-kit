@@ -90,6 +90,17 @@ runs:
           exit 1
         fi
 
+    # Both sub-actions run `node` on the CLI's `bin.js`, resolved from the repo
+    # root, and otherwise fail with a bare resolve error.
+    #
+    # - The usual cause is `setup`'s `install: root` in a repo that keeps
+    #   `@changesets/cli` in `devDependencies`, which that install skips.
+    - name: 🔍 Check the Changesets CLI
+      shell: bash
+      run: >-
+        bash "$GITHUB_ACTION_PATH/resolve-changesets-cli.sh" version-or-release
+        > /dev/null
+
     - name: 🦋 Open or update the version PR
       id: version
       if: ${{ inputs.next == 'version' }}

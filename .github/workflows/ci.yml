@@ -87,6 +87,57 @@ jobs:
       # with nothing to pack.
       - run: pnpm lint:package
 
+  # Installs only the root's `dependencies`, as `release.yml`'s privileged job
+  # does, so a package its version path needs but that install misses fails
+  # here, not only on `main`; see docs/decisions/unprivileged-release-build.md.
+  #
+  # - It runs on the version PR too, since the fabricated changeset below
+  #   gives `changeset version` work on any branch.
+  #
+  # - The publish path needs a pack and a registry, so only the version path
+  #   runs.
+  release-install:
+    name: 🚀 Release install
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # Shallow, like the release job's checkout, so `changeset version` runs
+      # the same `git fetch --deepen` the release job does to find each
+      # changeset's commit.
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./actions/setup
+        with:
+          cache: false
+          install: root
+
+      # Resolves the CLI through `version-or-release`'s own check, then runs
+      # it as changesets/action v2.1.2 does, `node` on that `bin.js`, so it
+      # fails where the release job would.
+      #
+      # - The fabricated changeset bumps a real package, so `version` loads
+      #   the config, the changelog formatter and the `format` setting even
+      #   while only empty changesets are pending.
+      #
+      # - That package is `kit-changesets-changelog`, so renaming or removing
+      #   it means updating the changeset here.
+      #
+      # - The runner discards everything it writes.
+      - name: 🦋 Version a fabricated changeset
+        run: |
+          printf '%s\n' '---' \
+            '"@jjloneman/kit-changesets-changelog": patch' '---' '' \
+            'Check the narrow release install.' \
+            > .changeset/ci-release-install.md
+
+          cli=$(bash actions/version-or-release/resolve-changesets-cli.sh \
+            "release install")
+
+          node "$cli" version
+
   test:
     name: 🧪 Tests
     runs-on: ubuntu-latest

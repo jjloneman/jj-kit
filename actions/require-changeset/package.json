@@ -11,6 +11,7 @@
   },
   "description": "🦋 A composite GitHub Action that fails a pull request adding no changeset, skipping the version PR and Renovate PRs that ship nothing.",
   "devDependencies": {
+    "@jjloneman/kit-tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

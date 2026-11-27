@@ -12,7 +12,6 @@ describe("readChangesetConfig", () => {
       description: "no config",
       expected: {
         ignore: [],
-        isPrivateTagged: false,
         isPrivateVersioned: false,
       },
       text: undefined,
@@ -21,7 +20,6 @@ describe("readChangesetConfig", () => {
       description: "a config that isn't an object",
       expected: {
         ignore: [],
-        isPrivateTagged: false,
         isPrivateVersioned: false,
       },
       text: "null",
@@ -30,7 +28,6 @@ describe("readChangesetConfig", () => {
       description: "privatePackages true, with an ignore list",
       expected: {
         ignore: ["@acme/docs"],
-        isPrivateTagged: true,
         isPrivateVersioned: true,
       },
       text: '{"ignore":["@acme/docs"],"privatePackages":true}',
@@ -39,21 +36,19 @@ describe("readChangesetConfig", () => {
       description: "privatePackages false",
       expected: {
         ignore: [],
-        isPrivateTagged: false,
         isPrivateVersioned: false,
       },
       text: '{"privatePackages":false}',
     },
     {
       description: "an object with both",
-      expected: { ignore: [], isPrivateTagged: true, isPrivateVersioned: true },
+      expected: { ignore: [], isPrivateVersioned: true },
       text: '{"privatePackages":{"tag":true,"version":true}}',
     },
     {
       description: "an object with version only",
       expected: {
         ignore: [],
-        isPrivateTagged: false,
         isPrivateVersioned: true,
       },
       text: '{"privatePackages":{"version":true}}',
@@ -136,30 +131,35 @@ test("a later entry ignores a name again", () => {
 });
 
 describe("isReleased", () => {
-  /** A config ignoring `@acme/docs`. */
+  /** A config ignoring `@acme/docs`, which leaves private packages out. */
   const CONFIG = readChangesetConfig('{"ignore":["@acme/docs"]}');
+
+  /** The same config, versioning private packages. */
+  const PRIVATE_CONFIG = readChangesetConfig(
+    '{"ignore":["@acme/docs"],"privatePackages":{"version":true}}'
+  );
 
   test.each([
     {
       description: "a public package",
       isPrivate: false,
-      isPrivateAllowed: false,
+      isPrivateVersioned: false,
       name: "@acme/a",
       shouldRelease: true,
       version: "1.0.0",
     },
     {
-      description: "a private package, private not allowed",
+      description: "a private package, private not versioned",
       isPrivate: true,
-      isPrivateAllowed: false,
+      isPrivateVersioned: false,
       name: "@acme/a",
       shouldRelease: false,
       version: "1.0.0",
     },
     {
-      description: "a private package, private allowed",
+      description: "a private package, private versioned",
       isPrivate: true,
-      isPrivateAllowed: true,
+      isPrivateVersioned: true,
       name: "@acme/a",
       shouldRelease: true,
       version: "1.0.0",
@@ -167,7 +167,7 @@ describe("isReleased", () => {
     {
       description: "an ignored package",
       isPrivate: false,
-      isPrivateAllowed: false,
+      isPrivateVersioned: false,
       name: "@acme/docs",
       shouldRelease: false,
       version: "1.0.0",
@@ -175,7 +175,7 @@ describe("isReleased", () => {
     {
       description: "a nameless package",
       isPrivate: false,
-      isPrivateAllowed: false,
+      isPrivateVersioned: false,
       name: undefined,
       shouldRelease: false,
       version: "1.0.0",
@@ -183,7 +183,7 @@ describe("isReleased", () => {
     {
       description: "an empty name",
       isPrivate: false,
-      isPrivateAllowed: false,
+      isPrivateVersioned: false,
       name: "",
       shouldRelease: false,
       version: "1.0.0",
@@ -191,7 +191,7 @@ describe("isReleased", () => {
     {
       description: "a versionless package",
       isPrivate: false,
-      isPrivateAllowed: false,
+      isPrivateVersioned: false,
       name: "@acme/a",
       shouldRelease: false,
       version: undefined,
@@ -199,26 +199,26 @@ describe("isReleased", () => {
     {
       description: "an empty version",
       isPrivate: false,
-      isPrivateAllowed: false,
+      isPrivateVersioned: false,
       name: "@acme/a",
       shouldRelease: false,
       version: "",
     },
   ])(
     "$description: $shouldRelease",
-    ({ isPrivate, isPrivateAllowed, name, shouldRelease, version }) => {
+    ({ isPrivate, isPrivateVersioned, name, shouldRelease, version }) => {
       // Given - a package's name, version and privacy.
 
       // When - Changesets' skip rule is applied.
       const isResult = isReleased({
-        config: CONFIG,
+        config: isPrivateVersioned ? PRIVATE_CONFIG : CONFIG,
         isPrivate,
-        isPrivateAllowed,
         name,
         version,
       });
 
-      // Then - only a named, versioned, allowed, unignored package releases.
+      // Then - only a named, versioned, unignored package releases, and a
+      // private one only while private packages are versioned.
       expect(isResult).toBe(shouldRelease);
     }
   );

@@ -280,11 +280,11 @@
     needs a changeset only when it ships a change:**
     - a change to a versioned package's `dependencies`, `optionalDependencies`,
       `peerDependencies`, `engines` or entry points, a `catalog:` entry they
-      point to included, or to a file it publishes, such as an action's
-      `action.yml`, needs a changeset that bumps each such package; the owner
-      adds `pnpm changeset` to the Renovate branch;
-    - any other file in a versioned package, such as a build config, needs a
-      changeset, an empty one included;
+      point to included, or to a file it publishes, one `pnpm pack --dry-run`
+      lists, such as an action's `action.yml`, needs a changeset that bumps each
+      such package; the owner adds `pnpm changeset` to the Renovate branch;
+    - any other file in a versioned package, such as a build config or a file
+      the PR deletes, needs a changeset, an empty one included;
     - versioned means Changesets would release it: a name and version, not in
       `ignore`, and public, or private while `privatePackages.version` is on, as
       it is here, so the actions count;

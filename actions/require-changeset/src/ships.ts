@@ -9,6 +9,15 @@ import {
   readChangesetConfig,
 } from "../../lib/src/changeset-config.ts";
 
+/**
+ * Lists the files a package publishes, as `pnpm pack --dry-run` does.
+ *
+ * @param folder - the package's folder, such as `packages/a`, or `.` for the
+ *   root.
+ * @returns each file's path, relative to the folder.
+ */
+export type PackFiles = (folder: string) => ReadonlySet<string>;
+
 /** Parses YAML text into plain data, as `yq -o json` does. */
 export type ParseYaml = (text: string) => unknown;
 
@@ -30,6 +39,12 @@ export type RenovateChange = {
 
 /** A read-only view of the repo's files at one revision. */
 export type Tree = {
+  /** Whether the revision has a file at a path, relative to the repo root. */
+  has: (file: string) => boolean;
+
+  /** Whether a path is a submodule, rather than a file, in the revision. */
+  isSubmodule: (file: string) => boolean;
+
   /** Every file path in the revision, relative to the repo root. */
   list: () => readonly string[];
 
@@ -39,6 +54,9 @@ export type Tree = {
 
 /** What every changed file is judged against, worked out once. */
 type Context = {
+  /** The tree with the change. */
+  after: Tree;
+
   /** The Changesets config. */
   config: ChangesetConfig;
 
@@ -47,6 +65,12 @@ type Context = {
 
   /** Both revisions' layouts, the change's first. */
   layouts: readonly [Layout, Layout];
+
+  /**
+   * Lists a package's published files as repo-root paths, packing each
+   * location at most once.
+   */
+  packedPaths: (location: PackLocation) => ReadonlySet<string>;
 
   /** The root manifest when the root is a package, else `undefined`. */
   root: Record<string, unknown> | undefined;
@@ -68,6 +92,18 @@ type Layout = {
 
   /** The parsed workspace file, empty when there is none. */
   workspace: Record<string, unknown>;
+};
+
+/** Where a package is, and where `pnpm pack` packs it from. */
+type PackLocation = {
+  /** The package's folder, or `.` for the root. */
+  folder: string;
+
+  /**
+   * The folder pnpm packs: the package's own, or its
+   * `publishConfig.directory`.
+   */
+  root: string;
 };
 
 /** A versioned package's name and the fields that change what it ships. */
@@ -117,11 +153,8 @@ const ENTRY_FIELDS = [
   "typings",
 ] as const;
 
-/** Files npm packs whatever `files` says, matched by name at the top. */
-const ALWAYS_PACKED = /^(?:readme|licen[cs]e)(?:\..*)?$/iu;
-
 /**
- * Root files that never ship with a root package that lists no `files`: the
+ * Root files that never ship with a root package, whatever pnpm packs: the
  * manifest, whose shipped fields are compared on their own, the workspace and
  * the lockfile.
  */
@@ -130,6 +163,16 @@ const ROOT_FILES_NOT_SHIPPED: ReadonlySet<string> = new Set([
   "pnpm-lock.yaml",
   "pnpm-workspace.yaml",
 ]);
+
+/**
+ * Root folders that never ship with a root package, whatever pnpm packs: the
+ * pending changesets, such as the one the owner adds to a Renovate branch,
+ * though not the Changesets config, and the repo's GitHub config.
+ *
+ * - Only a root package needs them set aside: in a monorepo, the root's files
+ *   ship nothing already.
+ */
+const ROOT_FOLDERS_NOT_SHIPPED = [".changeset", ".github"] as const;
 
 /** The workspace's file, which holds its package globs and catalogs. */
 const WORKSPACE_FILE = "pnpm-workspace.yaml";
@@ -144,15 +187,19 @@ const WORKSPACE_FILE = "pnpm-workspace.yaml";
  *
  * - A versioned package ships a change when its dependencies, `engines`,
  *   entry points or `files` change, a `catalog:` entry they point to
- *   included, or when a file it publishes changes: one its `files` list
- *   includes, or any file when it has none, such as an action's
- *   `action.yml`.
+ *   included, or when a file it publishes changes: one `pnpm pack` lists,
+ *   such as an action's `action.yml`.
+ *
+ * - A file the change deletes can't be packed, so it needs a changeset but no
+ *   release, like a build config.
  *
  * - A package the PR deletes ships nothing, since no changeset can name it.
  *
  * - The root is a package only when the workspace has no `packages` key;
  *   then its files are judged like a workspace package's, except that the
- *   lockfile, workspace file and `.github/` ship nothing.
+ *   lockfile, workspace file, `.changeset/` and `.github/` ship nothing.
+ *
+ * - The Changesets config needs a changeset but no release, in either layout.
  *
  * - Any other file in a versioned package, such as a build config, needs a
  *   changeset but no release, since it may still change what ships.
@@ -168,6 +215,7 @@ export function analyzeRenovateChange({
   after,
   before,
   changedFiles,
+  packFiles,
   parseYaml,
 }: {
   /** The tree with the change, such as the PR's head. */
@@ -179,12 +227,13 @@ export function analyzeRenovateChange({
   /** The paths the PR changes, relative to the repo root. */
   changedFiles: readonly string[];
 
+  /** Lists a package's published files at the change's revision. */
+  packFiles: PackFiles;
+
   /** The YAML parser for `pnpm-workspace.yaml`. */
   parseYaml: ParseYaml;
 }): RenovateChange {
-  const afterFiles = new Set(after.list());
-
-  if (!afterFiles.has("package.json") && !afterFiles.has(WORKSPACE_FILE)) {
+  if (!after.has("package.json") && !after.has(WORKSPACE_FILE)) {
     throw new Error(
       "Found neither package.json nor pnpm-workspace.yaml at the repo " +
         "root; the workspace must be at the root of the checkout."
@@ -195,10 +244,30 @@ export function analyzeRenovateChange({
     readLayout({ parseYaml, tree: after }),
     readLayout({ parseYaml, tree: before }),
   ] as const;
+  const packed = new Map<string, ReadonlySet<string>>();
   const context: Context = {
+    after,
     config: readChangesetConfig(after.read(CHANGESET_CONFIG)),
     folders: [...new Set(layouts.flatMap((layout) => layout.folders))],
     layouts,
+    packedPaths: ({ folder, root }) => {
+      // Keyed on both, though the root follows from the folder today, so a
+      // caller that passes another root never gets stale paths.
+      const key = `${folder}\0${root}`;
+      const cached = packed.get(key);
+
+      if (cached !== undefined) {
+        return cached;
+      }
+
+      const paths = new Set(
+        [...packFiles(folder)].map((file) => path.posix.join(root, file))
+      );
+
+      packed.set(key, paths);
+
+      return paths;
+    },
     root: layouts[0].isRootPackage
       ? layouts[0].manifest("package.json")
       : undefined,
@@ -216,10 +285,7 @@ export function analyzeRenovateChange({
     }
   }
 
-  const doesTouchManifests = changedFiles.some(
-    (file) =>
-      file === WORKSPACE_FILE || path.posix.basename(file) === "package.json"
-  );
+  const doesTouchManifests = changedFiles.some((file) => isManifestFile(file));
 
   if (doesTouchManifests) {
     for (const name of shippedFieldChanges(context)) {
@@ -228,6 +294,31 @@ export function analyzeRenovateChange({
   }
 
   return { hasOtherChanges, shippedPackages: [...shipped].sort() };
+}
+
+/**
+ * Decides whether the analysis may read a file: a manifest, the workspace
+ * file or the Changesets config, so a reader can fetch them all in one go and
+ * refuse any other.
+ *
+ * @param file - the file's path, relative to the repo root.
+ * @returns whether the analysis reads it.
+ */
+export function isAnalyzedFile(file: string): boolean {
+  return isManifestFile(file) || file === CHANGESET_CONFIG;
+}
+
+/**
+ * Decides whether a file is a manifest or the workspace file, whose changes
+ * the shipped-field comparison reads.
+ *
+ * @param file - the file's path, relative to the repo root.
+ * @returns whether it's a manifest or the workspace file.
+ */
+export function isManifestFile(file: string): boolean {
+  return (
+    file === WORKSPACE_FILE || path.posix.basename(file) === "package.json"
+  );
 }
 
 /**
@@ -301,26 +392,43 @@ function fileEffect({
   /** The changed file's path. */
   file: string;
 }): string | undefined {
-  const owner = context.folders
+  // The Changesets config ships nothing but changes what releases, so the
+  // owner decides, as for a build config, whatever the layout.
+  if (file === CHANGESET_CONFIG) {
+    return "other";
+  }
+
+  // A package's own manifest is compared apart, even a deleted one.
+  if (
+    path.posix.basename(file) === "package.json" &&
+    context.folders.includes(path.posix.dirname(file))
+  ) {
+    return undefined;
+  }
+
+  const holders = context.folders
     .filter((folder) => file.startsWith(`${folder}/`))
-    .reduce<string | undefined>(
-      (deepest, folder) =>
-        deepest === undefined || folder.length > deepest.length
-          ? folder
-          : deepest,
-      undefined
-    );
+    .sort((left, right) => right.length - left.length);
+
+  // The deepest package still at the head owns the file, so one left behind
+  // by a deleted nested package falls to the package around it.
+  const [owner] = holders.flatMap((folder) => {
+    const manifest = context.layouts[0].manifest(`${folder}/package.json`);
+
+    return manifest === undefined ? [] : [{ folder, manifest }];
+  });
+
+  // A file whose every package the PR deletes ships nothing, since no
+  // changeset can name them.
+  if (owner === undefined && holders.length > 0) {
+    return undefined;
+  }
 
   if (owner !== undefined) {
-    const manifestFile = `${owner}/package.json`;
-    const manifest = context.layouts[0].manifest(manifestFile);
-
-    // A deleted package ships nothing; its own manifest is compared apart.
-    if (file === manifestFile || manifest === undefined) {
-      return undefined;
-    }
-
-    const name = versionedName({ config: context.config, manifest });
+    const name = versionedName({
+      config: context.config,
+      manifest: owner.manifest,
+    });
 
     if (name === undefined) {
       return "other";
@@ -328,7 +436,12 @@ function fileEffect({
 
     // A file the package may not publish, such as a build config, still
     // needs a changeset, so the owner decides as on any PR.
-    return isPublished({ file: file.slice(owner.length + 1), manifest })
+    return isPublished({
+      context,
+      file,
+      folder: owner.folder,
+      manifest: owner.manifest,
+    })
       ? name
       : "other";
   }
@@ -338,63 +451,75 @@ function fileEffect({
   if (
     root === undefined ||
     ROOT_FILES_NOT_SHIPPED.has(file) ||
-    file.startsWith(".github/")
+    ROOT_FOLDERS_NOT_SHIPPED.some((folder) => file.startsWith(`${folder}/`))
   ) {
     return undefined;
   }
 
   const name = versionedName({ config: context.config, manifest: root });
 
-  return name !== undefined && isPublished({ file, manifest: root })
+  return name !== undefined &&
+    isPublished({ context, file, folder: ".", manifest: root })
     ? name
     : "other";
 }
 
 /**
- * Decides whether npm publishes a file with its package.
+ * Decides whether a changed file is published with its package: it's still
+ * there, and `pnpm pack` lists it.
  *
- * - With no `files` list, every file is published.
+ * - A deleted file is never packed, so it's left to the owner.
  *
- * - Otherwise, an empty one included, a file is published when the list
- *   includes it, or when npm packs it anyway: a top-level README or license,
- *   or the `main` or a `bin` target.
+ * - With `publishConfig.directory`, pnpm packs that folder instead, so a
+ *   file outside it never ships, and is decided without packing: that folder
+ *   may not be built yet, which makes `pnpm pack` fail.
  *
- * @returns whether the file is in the published package.
+ * - A `publishConfig.directory` outside the package, or absolute, can't be
+ *   matched against its files, so every file of the package ships, rather
+ *   than let a published change through.
+ *
+ * - A changed submodule ships, such as on a bump from Renovate's submodule
+ *   manager, since a checkout that skips submodules leaves pnpm nothing to
+ *   list inside it.
+ *
+ * @returns whether the file ships.
  */
 function isPublished({
+  context,
   file,
+  folder,
   manifest,
 }: {
-  /** The file's path, relative to the package's folder. */
+  /** What every changed file is judged against. */
+  context: Context;
+
+  /** The file's path, relative to the repo root. */
   file: string;
 
-  /** The package's manifest. */
+  /** The package's folder, or `.` for the root. */
+  folder: string;
+
+  /** The package's manifest, for its `publishConfig.directory`. */
   manifest: Record<string, unknown>;
 }): boolean {
-  const patterns = asStrings({
-    label: "a package.json's files",
-    value: manifest.files,
-  });
+  if (!context.after.has(file)) {
+    return false;
+  }
 
-  if (manifest.files === undefined || manifest.files === null) {
+  const root = packRoot({ folder, manifest });
+
+  // A submodule's files are missing from a checkout that skips submodules,
+  // as `actions/checkout` does by default, so pnpm can't say; a bump counts
+  // as shipped rather than let a published change through.
+  if (root === undefined || context.after.isSubmodule(file)) {
     return true;
   }
 
-  const bin = manifest.bin;
-  const targets = [
-    manifest.main,
-    ...(typeof bin === "string"
-      ? [bin]
-      : Object.values(asRecord({ label: "a package.json's bin", value: bin }))),
-  ]
-    .filter((target): target is string => typeof target === "string")
-    .map((target) => normalizeGlob(target));
+  if (root !== "." && !file.startsWith(`${root}/`)) {
+    return false;
+  }
 
-  return (
-    (!file.includes("/") && ALWAYS_PACKED.test(file)) ||
-    targets.includes(file) ||
-    matchesFiles({ file, patterns })
-  );
+  return context.packedPaths({ folder, root }).has(file);
 }
 
 /**
@@ -437,53 +562,6 @@ function listPackageFolders({
 }
 
 /**
- * Matches a file against a manifest's `files` list, where an entry names a
- * file, a folder holding it, or a glob, and a `!` entry excludes.
- *
- * @returns whether the list includes the file.
- */
-function matchesFiles({
-  file,
-  patterns,
-}: {
-  /** The file's path, relative to the package's folder. */
-  file: string;
-
-  /** The manifest's `files` entries. */
-  patterns: readonly string[];
-}): boolean {
-  const normalized = patterns.map((pattern) => normalizeGlob(pattern));
-
-  const parts = file.split("/");
-  const ancestors = parts
-    .slice(1)
-    .map((_part, index) => parts.slice(0, index + 1).join("/"));
-
-  /**
-   * Matches the file against one entry, as itself or as a folder holding it,
-   * at any depth; matching its folders, not `<entry>/**`, keeps dotfiles in,
-   * as npm does.
-   *
-   * @param pattern - the entry, without `!`.
-   * @returns whether the file is under it.
-   */
-  function isUnder(pattern: string): boolean {
-    return [file, ...ancestors].some((candidate) =>
-      path.posix.matchesGlob(candidate, pattern)
-    );
-  }
-
-  return (
-    normalized.some(
-      (pattern) => !pattern.startsWith("!") && isUnder(pattern)
-    ) &&
-    !normalized.some(
-      (pattern) => pattern.startsWith("!") && isUnder(pattern.slice(1))
-    )
-  );
-}
-
-/**
  * Writes a glob or path the way `matchesGlob` reads paths: without a leading
  * `./` or `/`, or a trailing `/`, all of which pnpm and npm accept.
  *
@@ -497,6 +575,47 @@ function normalizeGlob(glob: string): string {
     .replace(/\/+$/u, "");
 
   return isExclude ? `!${body}` : body;
+}
+
+/**
+ * Finds the folder `pnpm pack` packs a package from: its
+ * `publishConfig.directory`, under the package's folder, or else the folder
+ * itself.
+ *
+ * @returns the folder, relative to the repo root, such as `packages/a/lib`,
+ *   or `.` for the root; `undefined` for a directory that's absolute or
+ *   climbs out of the package's folder.
+ */
+function packRoot({
+  folder,
+  manifest,
+}: {
+  /** The package's folder, or `.` for the root. */
+  folder: string;
+
+  /** The package's manifest. */
+  manifest: Record<string, unknown>;
+}): string | undefined {
+  // A malformed `publishConfig` throws, as any malformed manifest does,
+  // rather than answer that nothing ships.
+  const { directory } = asRecord({
+    label: "a package.json's publishConfig",
+    value: manifest.publishConfig,
+  });
+
+  if (typeof directory !== "string") {
+    return folder;
+  }
+
+  // `join` keeps a trailing slash, as in `./lib/`, which pnpm accepts.
+  const root = path.posix.join(folder, directory).replace(/(?<=.)\/+$/u, "");
+  const inside = path.posix.relative(folder, root);
+
+  return path.posix.isAbsolute(directory) ||
+    inside === ".." ||
+    inside.startsWith("../")
+    ? undefined
+    : root;
 }
 
 /**
@@ -727,7 +846,6 @@ function versionedName({
   const isVersioned = isReleased({
     config,
     isPrivate: manifest.private === true,
-    isPrivateAllowed: config.isPrivateVersioned,
     name,
     version:
       typeof manifest.version === "string" ? manifest.version : undefined,

@@ -2,7 +2,11 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { checkChangesetsCli, runChangesetStatus } from "./changeset-status.ts";
+import {
+  checkChangesetsCli,
+  runChangesetJson,
+  runChangesetStatus,
+} from "./changeset-status.ts";
 
 vi.mock(import("node:child_process"), () => ({ execFileSync: vi.fn() }));
 
@@ -34,7 +38,7 @@ function fakeChangeset({
     }
 
     if (isStatusFailing) {
-      throw new Error("exit 1");
+      throw Object.assign(new Error("exit 1"), { status: 1 });
     }
 
     return "";
@@ -43,6 +47,128 @@ function fakeChangeset({
 
 /** A release plan as `changeset status` writes it. */
 const PLAN = { changesets: [{ id: "a", releases: [] }], releases: [] };
+
+describe("runChangesetJson", () => {
+  afterEach(() => {
+    vi.resetAllMocks();
+  });
+
+  test.each([
+    { description: "removes", isRemoved: true, shouldKeep: false },
+    { description: "keeps, when asked,", isRemoved: false, shouldKeep: true },
+  ])(
+    "hands read the file, then $description the folder",
+    ({ isRemoved, shouldKeep }) => {
+      // Given - a command that writes its file.
+      fakeChangeset({});
+      vi.mocked(readFileSync).mockReturnValue("{}");
+
+      // When - it runs.
+      const output = runChangesetJson({
+        args: ["publish-plan"],
+        env: { RUNNER_TEMP: "/runner/temp" },
+        fileName: "plan.json",
+        prefix: "plan-",
+        read: (written) => written,
+        shouldKeep,
+      });
+
+      // Then - read got the file and its text, and the folder went or
+      // stayed.
+      expect(output).toStrictEqual({
+        file: "/runner/temp/plan-abc/plan.json",
+        folder: "/runner/temp/plan-abc",
+        text: "{}",
+      });
+
+      expect(vi.mocked(rmSync).mock.calls.length > 0).toBe(isRemoved);
+    }
+  );
+
+  test("removes the folder and throws when the file can't be read", () => {
+    // Given - a command that exits zero but writes no file.
+    fakeChangeset({});
+
+    vi.mocked(readFileSync).mockImplementation(() => {
+      throw new Error("ENOENT");
+    });
+
+    // When - it runs.
+    const run = (): unknown =>
+      runChangesetJson({
+        args: ["publish-plan"],
+        env: { RUNNER_TEMP: "/runner/temp" },
+        fileName: "plan.json",
+        prefix: "plan-",
+        read: (written) => written,
+      });
+
+    // Then - the read's error comes through, and the folder is gone.
+    expect(run).toThrow("ENOENT");
+
+    expect(rmSync).toHaveBeenCalledWith("/runner/temp/plan-abc", {
+      force: true,
+      recursive: true,
+    });
+  });
+});
+
+describe("runChangesetJson, when the command can't start", () => {
+  afterEach(() => {
+    vi.resetAllMocks();
+  });
+
+  test("returns undefined for a command killed by a signal", () => {
+    // Given - a command killed on a timeout, so it has a signal but no status.
+    vi.mocked(mkdtempSync).mockImplementation((prefix) => `${prefix}abc`);
+
+    vi.mocked(execFileSync).mockImplementation(() => {
+      throw Object.assign(new Error("killed"), {
+        signal: "SIGKILL",
+        status: null,
+      });
+    });
+
+    // When - it runs.
+    const output = runChangesetJson({
+      args: ["status"],
+      env: {},
+      fileName: "status.json",
+      prefix: "status-",
+      read: (written) => written,
+    });
+
+    // Then - it counts as a command that ran and failed.
+    expect(output).toBeUndefined();
+  });
+
+  test("throws the spawn error and removes the folder", () => {
+    // Given - pnpm missing from `PATH`, so the error has no exit status.
+    vi.mocked(mkdtempSync).mockImplementation((prefix) => `${prefix}abc`);
+
+    vi.mocked(execFileSync).mockImplementation(() => {
+      throw new Error("spawnSync pnpm ENOENT");
+    });
+
+    // When - it runs.
+    const run = (): unknown =>
+      runChangesetJson({
+        args: ["publish-plan"],
+        env: { RUNNER_TEMP: "/runner/temp" },
+        fileName: "plan.json",
+        prefix: "plan-",
+        read: (written) => written,
+      });
+
+    // Then - the spawn error comes through, and the folder is gone.
+    expect(run).toThrow("spawnSync pnpm ENOENT");
+
+    expect(rmSync).toHaveBeenCalledWith("/runner/temp/plan-abc", {
+      force: true,
+      recursive: true,
+    });
+  });
+});
 
 describe("runChangesetStatus", () => {
   afterEach(() => {

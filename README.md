@@ -112,15 +112,15 @@ repo inherits
     the config's `ignore`, and public, or private while
     `privatePackages.version` is on.
   - A package ships a change when its dependencies, `engines`, entry points or
-    `files` change, or a file it publishes changes: one its `files` list
-    includes, a README or license, or its `main` or `bin` target, or any file
-    when it has no `files` list.
-  - Any other file in a versioned package, such as a build config, needs a
-    changeset, an empty one included.
+    `files` change, or a file it publishes changes: one
+    `pnpm pack --dry-run --ignore-scripts --ignore-pnpmfile` lists in its
+    folder.
+  - Any other file in a versioned package, such as a build config or a file the
+    PR deletes, needs a changeset, an empty one included.
   - In a single-package repo, the root is judged the same way.
 - **Needs** a `pull_request` event, `contents: read`, a checkout with
-  `fetch-depth: 0`, a Linux or macOS runner, and `yq` v4 for Renovate PRs, which
-  GitHub's Ubuntu runners ship.
+  `fetch-depth: 0`, a Linux or macOS runner, and, for Renovate PRs, pnpm 10.26
+  or later and `yq` v4, which GitHub's Ubuntu runners ship.
 
 | Input                | Default               | What it does                                                                       |
 | -------------------- | --------------------- | ---------------------------------------------------------------------------------- |

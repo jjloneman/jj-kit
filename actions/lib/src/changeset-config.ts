@@ -5,9 +5,6 @@ export type ChangesetConfig = {
   /** The package names or globs Changesets never releases, its `ignore`. */
   ignore: readonly string[];
 
-  /** Whether a release tags private packages, `privatePackages.tag`. */
-  isPrivateTagged: boolean;
-
   /** Whether changesets version private packages, `privatePackages.version`. */
   isPrivateVersioned: boolean;
 };
@@ -54,14 +51,13 @@ export function isIgnored({
 /**
  * Decides whether Changesets releases a package, by its own skip rule: it has
  * a name and a version, isn't in the config's `ignore`, and is public, or
- * private while `isPrivateAllowed` is on.
+ * private while the config versions private packages.
  *
  * @returns whether Changesets releases the package.
  */
 export function isReleased({
   config,
   isPrivate,
-  isPrivateAllowed,
   name,
   version,
 }: {
@@ -70,12 +66,6 @@ export function isReleased({
 
   /** Whether the package is private. */
   isPrivate: boolean;
-
-  /**
-   * Whether private packages count: `isPrivateVersioned` for versioning,
-   * `isPrivateTagged` for tagging.
-   */
-  isPrivateAllowed: boolean;
 
   /** The package's name, or `undefined` when it has none. */
   name: string | undefined;
@@ -88,17 +78,17 @@ export function isReleased({
     name !== "" &&
     version !== undefined &&
     version !== "" &&
-    (!isPrivate || isPrivateAllowed) &&
+    (!isPrivate || config.isPrivateVersioned) &&
     !isIgnored({ config, name })
   );
 }
 
 /**
- * Reads the Changesets config's `ignore` and `privatePackages`, with
+ * Reads the Changesets config's `ignore` and `privatePackages.version`, with
  * Changesets' defaults when either, or the whole config, is absent.
  *
- * - `privatePackages` of `true` or `false` sets both flags; an object sets
- *   each on its own.
+ * - `privatePackages` of `true` or `false` sets the flag; an object sets it
+ *   from its `version`.
  *
  * @param text - the config's JSON text, or `undefined` when there is none.
  * @returns the settings.
@@ -117,7 +107,7 @@ export function readChangesetConfig(text: string | undefined): ChangesetConfig {
   }
 
   if (typeof value === "boolean") {
-    return { ignore, isPrivateTagged: value, isPrivateVersioned: value };
+    return { ignore, isPrivateVersioned: value };
   }
 
   if (typeof value !== "object" || value === null) {
@@ -126,7 +116,6 @@ export function readChangesetConfig(text: string | undefined): ChangesetConfig {
 
   return {
     ignore,
-    isPrivateTagged: "tag" in value && value.tag === true,
     isPrivateVersioned: "version" in value && value.version === true,
   };
 }

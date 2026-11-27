@@ -20,9 +20,9 @@ tags:
   - type-stripping
   - version-pr
   - workspace
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T05:35:15Z }
-verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
+verified: { by: human:jjloneman, at: 2026-11-27T06:09:56Z }
 ---
 
 # Architecture

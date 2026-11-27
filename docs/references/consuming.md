@@ -21,9 +21,9 @@ tags:
   - renovate
   - setup-action
   - version-pr
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T05:57:29Z }
-verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
+verified: { by: human:jjloneman, at: 2026-11-27T06:09:56Z }
 ---
 
 # Consuming the kit

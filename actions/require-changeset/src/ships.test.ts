@@ -1,14 +1,18 @@
 import { describe, expect, test, vi } from "vitest";
 
-import type { RenovateChange, Tree } from "./ships.ts";
+import type { PackFiles, RenovateChange, Tree } from "./ships.ts";
 
-import { analyzeRenovateChange } from "./ships.ts";
+import {
+  analyzeRenovateChange,
+  isAnalyzedFile,
+  isManifestFile,
+} from "./ships.ts";
 
 /** A JSON object to write as a fixture file. */
 type Json = Record<string, unknown>;
 
 /** A Changesets config that versions private packages. */
-const VERSIONS_PRIVATE = { privatePackages: { tag: true, version: true } };
+const VERSIONS_PRIVATE = { privatePackages: { version: true } };
 
 /** The workspace every case starts from, written as JSON, which is YAML. */
 const WORKSPACE: Json = {
@@ -55,13 +59,7 @@ const BASE_FILES: Record<string, unknown> = {
 };
 
 /** The single-package repo the root cases start from. */
-const SOLO: Json = {
-  bin: { solo: "./bin/solo.js" },
-  files: ["dist/", "!dist/*.map"],
-  main: "index.js",
-  name: "solo",
-  version: "1.0.0",
-};
+const SOLO: Json = { files: ["dist"], name: "solo", version: "1.0.0" };
 
 /**
  * Compares a base tree with one changed by `change`, where `null` removes a
@@ -73,6 +71,7 @@ function analyze({
   base = BASE_FILES,
   change,
   changedFiles,
+  packed = {},
 }: {
   /** The base tree's files, the monorepo by default. */
   base?: Record<string, unknown>;
@@ -82,18 +81,38 @@ function analyze({
 
   /** The paths the PR changes. */
   changedFiles: readonly string[];
+
+  /** What `pnpm pack` lists in each folder, none by default. */
+  packed?: Record<string, readonly string[]>;
 }): RenovateChange {
   return analyzeRenovateChange({
     after: makeTree({ ...base, ...change }),
     before: makeTree(base),
     changedFiles,
+    packFiles: fakePack(packed),
     parseYaml: JSON.parse,
   });
 }
 
 /**
+ * Fakes `pnpm pack --dry-run`, listing each folder's files.
+ *
+ * @param packed - each folder's packed files, by folder.
+ * @returns the packer.
+ */
+function fakePack(packed: Record<string, readonly string[]>): PackFiles {
+  return (folder) => new Set(packed[folder] ?? []);
+}
+
+/** Marks a fixture path as a submodule rather than a file. */
+const SUBMODULE = Symbol("submodule");
+
+/**
  * Builds a tree from fixture files, writing a string as is, any other value
- * as JSON, and skipping `null`.
+ * as JSON, skipping `null`, and listing `SUBMODULE` as a submodule.
+ *
+ * - Like the real reader, it throws for a listed file the analysis shouldn't
+ *   read, so a test catches a read the reader would refuse.
  *
  * @param files - each file's path and content.
  * @returns the tree.
@@ -108,9 +127,23 @@ function makeTree(files: Record<string, unknown>): Tree {
       ])
   );
 
+  const submodules = new Set(
+    Object.entries(files)
+      .filter(([_file, content]) => content === SUBMODULE)
+      .map(([file]) => file)
+  );
+
   return {
+    has: (file) => texts.has(file),
+    isSubmodule: (file) => submodules.has(file),
     list: () => [...texts.keys()],
-    read: (file) => texts.get(file),
+    read: (file) => {
+      if (texts.has(file) && !isAnalyzedFile(file)) {
+        throw new Error(`The analysis read ${file}, which it never batches.`);
+      }
+
+      return texts.get(file);
+    },
   };
 }
 
@@ -336,8 +369,9 @@ describe("analyzeRenovateChange", () => {
     {
       change: { "packages/a/src/index.ts": "export const a = 1;" },
       changedFiles: ["packages/a/src/index.ts"],
-      description: "a public package's source file ships it",
+      description: "a file pnpm packs ships its package",
       expected: { hasOtherChanges: false, shippedPackages: ["@acme/a"] },
+      packed: { "packages/a": ["package.json", "src/index.ts"] },
     },
     {
       change: {
@@ -347,75 +381,122 @@ describe("analyzeRenovateChange", () => {
       changedFiles: ["apps/web/action.yml"],
       description: "a versioned private package's action.yml ships it",
       expected: { hasOtherChanges: false, shippedPackages: ["web"] },
+      packed: { "apps/web": ["action.yml", "package.json"] },
     },
     {
-      change: {
-        "packages/a/package.json": { ...PACKAGE_A, files: ["dist"] },
-        "packages/a/tsconfig.json": "{}",
-      },
+      change: { "packages/a/tsconfig.json": "{}" },
       changedFiles: ["packages/a/tsconfig.json"],
-      description: "a file outside a package's files list needs a changeset",
+      description: "a file pnpm doesn't pack needs a changeset",
       expected: { hasOtherChanges: true, shippedPackages: [] },
+      packed: { "packages/a": ["dist/index.js", "package.json"] },
     },
     {
       change: {
-        "packages/a/package.json": { ...PACKAGE_A, files: ["templates"] },
-        "packages/a/templates/.github/ci.yml": "",
+        "packages/a/lib/index.js": "",
+        "packages/a/package.json": {
+          ...PACKAGE_A,
+          publishConfig: { directory: "./lib/" },
+        },
       },
-      changedFiles: ["packages/a/templates/.github/ci.yml"],
-      description: "a dotfile under a files folder ships it",
+      changedFiles: ["packages/a/lib/index.js"],
+      description: "a file in publishConfig.directory ships its package",
       expected: { hasOtherChanges: false, shippedPackages: ["@acme/a"] },
+      packed: { "packages/a": ["index.js", "package.json"] },
     },
     {
       change: {
-        "packages/a/package.json": { ...PACKAGE_A, files: [] },
-        "packages/a/README.md": "",
+        "packages/a/package.json": {
+          ...PACKAGE_A,
+          publishConfig: { directory: "lib" },
+        },
+        "packages/a/src/index.ts": "export const a = 1;",
       },
-      changedFiles: ["packages/a/README.md"],
-      description: "an empty files list still publishes the README",
-      expected: { hasOtherChanges: false, shippedPackages: ["@acme/a"] },
-    },
-    {
-      change: {
-        "packages/a/package.json": { ...PACKAGE_A, files: [] },
-        "packages/a/src/x.ts": "",
-      },
-      changedFiles: ["packages/a/src/x.ts"],
-      description: "an empty files list leaves source files out",
+      changedFiles: ["packages/a/src/index.ts"],
+      description: "a file outside publishConfig.directory needs a changeset",
       expected: { hasOtherChanges: true, shippedPackages: [] },
+      packed: { "packages/a": ["package.json", "src/index.ts"] },
     },
     {
       change: {
-        "packages/a/dist/a.js": "",
-        "packages/a/package.json": { ...PACKAGE_A, files: ["dist"] },
+        "packages/a/package.json": {
+          ...PACKAGE_A,
+          publishConfig: { directory: "../../dist/a" },
+        },
+        "packages/a/src/index.ts": "export const a = 1;",
       },
-      changedFiles: ["packages/a/dist/a.js"],
-      description: "a file inside a package's files list ships it",
+      changedFiles: ["packages/a/src/index.ts"],
+      description:
+        "a publishConfig.directory outside the package ships every file",
       expected: { hasOtherChanges: false, shippedPackages: ["@acme/a"] },
+      packed: {},
+    },
+    {
+      change: {
+        "packages/a/package.json": {
+          ...PACKAGE_A,
+          publishConfig: { directory: "/out" },
+        },
+        "packages/a/src/index.ts": "export const a = 1;",
+      },
+      changedFiles: ["packages/a/src/index.ts"],
+      description: "a publishConfig.directory absolute ships every file",
+      expected: { hasOtherChanges: false, shippedPackages: ["@acme/a"] },
+      packed: {},
+    },
+    {
+      change: { "packages/a/vendor/lib": SUBMODULE },
+      changedFiles: ["packages/a/vendor/lib"],
+      description: "a submodule bump ships, packed or not",
+      expected: { hasOtherChanges: false, shippedPackages: ["@acme/a"] },
+      packed: { "packages/a": ["package.json"] },
+    },
+    {
+      change: { ".changeset/config.json": { ignore: [] } },
+      changedFiles: [".changeset/config.json"],
+      description: "a monorepo's Changesets config needs a changeset",
+      expected: { hasOtherChanges: true, shippedPackages: [] },
+      packed: {},
+    },
+    {
+      change: { ".changeset/config.json": VERSIONS_PRIVATE, "apps/web/x": "" },
+      changedFiles: ["apps/web/x"],
+      description: "a versioned private package with no pack list doesn't ship",
+      expected: { hasOtherChanges: true, shippedPackages: [] },
+      packed: {},
+    },
+    {
+      change: { "packages/a/src/index.ts": null },
+      changedFiles: ["packages/a/src/index.ts"],
+      description: "a file the PR deletes needs a changeset",
+      expected: { hasOtherChanges: true, shippedPackages: [] },
+      packed: { "packages/a": ["package.json"] },
     },
     {
       change: { "packages/b/package.json": null, "packages/b/src/b.ts": "" },
       changedFiles: ["packages/b/src/b.ts"],
       description: "a file of a package the PR deletes ships nothing",
       expected: { hasOtherChanges: false, shippedPackages: [] },
+      packed: {},
     },
     {
       change: { "apps/web/action.yml": "name: web" },
       changedFiles: ["apps/web/action.yml"],
       description: "an unversioned private package's file needs a changeset",
       expected: { hasOtherChanges: true, shippedPackages: [] },
+      packed: { "apps/web": ["action.yml"] },
     },
     {
       change: {},
       changedFiles: [".github/workflows/ci.yml", "pnpm-lock.yaml", "x.md"],
       description: "a monorepo's root files ship nothing",
       expected: { hasOtherChanges: false, shippedPackages: [] },
+      packed: { ".": ["x.md"] },
     },
-  ])("$description", ({ change, changedFiles, expected }) => {
+  ])("$description", ({ change, changedFiles, expected, packed }) => {
     // Given - a change to a file other than a manifest.
 
     // When - it's analyzed.
-    const result = analyze({ change, changedFiles });
+    const result = analyze({ change, changedFiles, packed });
 
     // Then - it ships the package that holds it, if versioned.
     expect(result).toStrictEqual(expected);
@@ -424,39 +505,15 @@ describe("analyzeRenovateChange", () => {
   test.each([
     {
       changedFiles: ["dist/index.js"],
-      description: "a file its files list includes ships it",
+      description: "a file pnpm packs ships it",
       expected: { hasOtherChanges: false, shippedPackages: ["solo"] },
       root: SOLO,
-    },
-    {
-      changedFiles: ["README.md", "index.js", "bin/solo.js"],
-      description: "a README, the main file and a bin target ship it",
-      expected: { hasOtherChanges: false, shippedPackages: ["solo"] },
-      root: SOLO,
-    },
-    {
-      changedFiles: ["dist/index.js"],
-      description: "a root-anchored files entry ships it",
-      expected: { hasOtherChanges: false, shippedPackages: ["solo"] },
-      root: { ...SOLO, files: ["/dist"] },
-    },
-    {
-      changedFiles: ["cli.js"],
-      description: "a string bin target ships it",
-      expected: { hasOtherChanges: false, shippedPackages: ["solo"] },
-      root: { ...SOLO, bin: "cli.js" },
     },
     {
       changedFiles: ["dist/index.js.map", ".nvmrc", "src/cli.ts"],
-      description: "files its files list leaves out need a changeset",
+      description: "files pnpm doesn't pack need a changeset",
       expected: { hasOtherChanges: true, shippedPackages: [] },
       root: SOLO,
-    },
-    {
-      changedFiles: ["src/cli.ts"],
-      description: "with no files list, a versioned root's file ships it",
-      expected: { hasOtherChanges: false, shippedPackages: ["solo"] },
-      root: { name: "solo", version: "1.0.0" },
     },
     {
       changedFiles: ["dist/index.js"],
@@ -466,32 +523,169 @@ describe("analyzeRenovateChange", () => {
     },
     {
       changedFiles: ["src/cli.ts"],
-      description: "with no files list, a source file needs a changeset",
+      description: "a nameless root's file needs a changeset",
       expected: { hasOtherChanges: true, shippedPackages: [] },
       root: { name: "solo" },
     },
     {
-      changedFiles: ["pnpm-lock.yaml", ".github/workflows/ci.yml"],
-      description: "with no files list, the lockfile and workflows don't",
+      changedFiles: [
+        ".changeset/bump.md",
+        ".github/workflows/ci.yml",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+      ],
+      description:
+        "the lockfile, workspace file, changesets and workflows don't",
       expected: { hasOtherChanges: false, shippedPackages: [] },
-      root: { name: "solo" },
+      root: SOLO,
     },
   ])(
     "in a single-package repo, $description",
     ({ changedFiles, expected, root }) => {
-      // Given - a repo whose root is its only package.
+      // Given - a repo whose root is its only package, packing every
+      // changeset, workflow, lockfile and workspace file but only
+      // `dist/index.js` of the rest.
+      const files = Object.fromEntries(
+        changedFiles
+          .filter((file) => !isManifestFile(file))
+          .map((file) => [file, ""])
+      );
 
       // When - a change is analyzed.
       const result = analyze({
-        base: { "package.json": root },
+        base: { ...files, "package.json": root, "pnpm-workspace.yaml": "null" },
         change: {},
         changedFiles,
+        packed: {
+          ".": [
+            ".changeset/bump.md",
+            ".github/workflows/ci.yml",
+            "dist/index.js",
+            "pnpm-lock.yaml",
+            "pnpm-workspace.yaml",
+          ],
+        },
       });
 
-      // Then - root files ship only as its files list says.
+      // Then - root files ship only as pnpm packs them.
       expect(result).toStrictEqual(expected);
     }
   );
+
+  test("a file left by a deleted nested package ships the outer one", () => {
+    // Given - a package nested inside `@acme/a`, which the PR deletes while
+    // keeping, and changing, one of its files.
+    const base = {
+      "packages/a/package.json": PACKAGE_A,
+      "packages/a/sub/index.js": "",
+      "packages/a/sub/package.json": { name: "@acme/sub", version: "1.0.0" },
+      "pnpm-workspace.yaml": { packages: ["packages/**"] },
+    };
+
+    // When - it's analyzed.
+    const result = analyze({
+      base,
+      change: {
+        "packages/a/sub/index.js": "export {};",
+        "packages/a/sub/package.json": null,
+      },
+      changedFiles: ["packages/a/sub/index.js", "packages/a/sub/package.json"],
+      packed: { "packages/a": ["sub/index.js"] },
+    });
+
+    // Then - the file now ships with `@acme/a`, and the deleted manifest
+    // ships nothing.
+    expect(result).toStrictEqual({
+      hasOtherChanges: false,
+      shippedPackages: ["@acme/a"],
+    });
+  });
+
+  test("never packs an unbuilt publishConfig.directory", () => {
+    // Given - a package publishing an unbuilt `lib/`, where pnpm pack fails.
+    const packFiles = vi.fn<PackFiles>(() => {
+      throw new Error("ERR_PNPM_NO_IMPORTER_MANIFEST_FOUND");
+    });
+    const files = {
+      ...BASE_FILES,
+      "packages/a/package.json": {
+        ...PACKAGE_A,
+        publishConfig: { directory: "lib" },
+      },
+      "packages/a/src/index.ts": "export const a = 1;",
+    };
+
+    // When - a source file outside `lib/` changes.
+    const result = analyzeRenovateChange({
+      after: makeTree(files),
+      before: makeTree(files),
+      changedFiles: ["packages/a/src/index.ts"],
+      packFiles,
+      parseYaml: JSON.parse,
+    });
+
+    // Then - it needs a changeset, without packing.
+    expect(packFiles).not.toHaveBeenCalled();
+
+    expect(result).toStrictEqual({
+      hasOtherChanges: true,
+      shippedPackages: [],
+    });
+  });
+
+  test("packs each package at most once, and only for a non-manifest file", () => {
+    // Given - a packer that records its calls.
+    const packFiles = vi.fn(fakePack({ "packages/a": ["src/index.ts"] }));
+    const base = makeTree(BASE_FILES);
+    const after = makeTree({
+      ...BASE_FILES,
+      "packages/a/src/extra.ts": "",
+      "packages/a/src/index.ts": "export const a = 1;",
+    });
+
+    // When - two of one package's files and its manifest change.
+    const result = analyzeRenovateChange({
+      after,
+      before: base,
+      changedFiles: [
+        "packages/a/package.json",
+        "packages/a/src/extra.ts",
+        "packages/a/src/index.ts",
+      ],
+      packFiles,
+      parseYaml: JSON.parse,
+    });
+
+    // Then - it packed that package once, and one file ships it while the
+    // other needs a changeset.
+    expect(packFiles.mock.calls).toStrictEqual([["packages/a"]]);
+    expect(result).toStrictEqual({
+      hasOtherChanges: true,
+      shippedPackages: ["@acme/a"],
+    });
+  });
+
+  test("a single-package repo's Changesets config needs a changeset", () => {
+    // Given - a versioned root whose config pnpm would pack.
+
+    // When - its Changesets config changes.
+    const result = analyze({
+      base: {
+        ".changeset/config.json": "{}",
+        "package.json": SOLO,
+        "pnpm-workspace.yaml": "null",
+      },
+      change: { ".changeset/config.json": '{"ignore":[]}' },
+      changedFiles: [".changeset/config.json"],
+      packed: { ".": [".changeset/config.json"] },
+    });
+
+    // Then - it needs a changeset but no release.
+    expect(result).toStrictEqual({
+      hasOtherChanges: true,
+      shippedPackages: [],
+    });
+  });
 
   test("a single-package repo ships its own dependency bump", () => {
     // Given - a public root with no workspace file.
@@ -560,12 +754,14 @@ describe("analyzeRenovateChange", () => {
       after: tree,
       before: tree,
       changedFiles: ["apps/web/plugins/p/package.json"],
+      packFiles: fakePack({}),
       parseYaml: JSON.parse,
     });
     const withSource = analyzeRenovateChange({
       after: tree,
       before: tree,
       changedFiles: ["apps/web/plugins/p/index.ts"],
+      packFiles: fakePack({}),
       parseYaml: JSON.parse,
     });
 
@@ -575,11 +771,13 @@ describe("analyzeRenovateChange", () => {
   });
 
   test("skips package folders under node_modules, as pnpm does", () => {
-    // Given - a package with a tracked dependency folder holding a manifest.
+    // Given - a package with a tracked dependency folder holding a manifest,
+    // which it bundles.
 
     // When - a file in that folder changes.
     const result = analyze({
       base: {
+        "packages/a/node_modules/x/index.js": "",
         "packages/a/node_modules/x/package.json": {
           name: "x",
           version: "1.0.0",
@@ -589,6 +787,7 @@ describe("analyzeRenovateChange", () => {
       },
       change: {},
       changedFiles: ["packages/a/node_modules/x/index.js"],
+      packed: { "packages/a": ["node_modules/x/index.js"] },
     });
 
     // Then - it belongs to the outer package, not a package of its own.
@@ -668,6 +867,7 @@ describe("analyzeRenovateChange", () => {
       after: { ...tree, read },
       before: tree,
       changedFiles: [".github/workflows/ci.yml"],
+      packFiles: fakePack({}),
       parseYaml: JSON.parse,
     });
 
@@ -747,22 +947,5 @@ describe("analyzeRenovateChange", () => {
 
     // Then - it throws rather than answer that nothing ships.
     expect(compare).toThrow(error);
-  });
-
-  test("throws on a root files list that isn't strings", () => {
-    // Given - a single-package repo with a malformed files list.
-
-    // When - a root file is analyzed.
-    const compare = (): RenovateChange =>
-      analyze({
-        base: {
-          "package.json": { files: "dist", name: "solo", version: "1.0.0" },
-        },
-        change: {},
-        changedFiles: ["dist/index.js"],
-      });
-
-    // Then - it throws.
-    expect(compare).toThrow("files isn't a list of strings.");
   });
 });

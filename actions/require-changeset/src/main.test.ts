@@ -31,6 +31,9 @@ type Fakes = {
   /** Whether the checkout is shallow. */
   isShallow?: boolean;
 
+  /** What `pnpm pack` lists, by the folder it runs in. */
+  packed?: Record<string, string[]>;
+
   /** What `changeset status` writes, or `undefined` for it to fail. */
   plan?: {
     changesets: { id: string; releases: unknown[] }[];
@@ -75,6 +78,15 @@ function fake(fakes: Fakes): void {
 
   vi.mocked(mkdtempSync).mockImplementation((prefix) => `${prefix}abc`);
 
+  // Only the plan's file is read from disk; any other read is a bug.
+  vi.mocked(readFileSync).mockImplementation((file) => {
+    if (String(file).endsWith("/status.json")) {
+      return JSON.stringify(fakes.plan);
+    }
+
+    throw new Error(`ENOENT: ${String(file)}`);
+  });
+
   vi.mocked(execFileSync).mockImplementation((command, args = [], options) => {
     const [subcommand, ...rest] = args;
 
@@ -82,12 +94,20 @@ function fake(fakes: Fakes): void {
       return "3.0.3\n";
     }
 
+    if (command === "pnpm" && subcommand === "pack") {
+      const folder = String(options?.cwd);
+
+      return JSON.stringify({
+        files: (fakes.packed?.[folder] ?? []).map((file) => ({ path: file })),
+      });
+    }
+
     if (command === "pnpm") {
       if (fakes.plan === undefined) {
-        throw new Error("changeset status exited with 1");
+        throw Object.assign(new Error("changeset status exited with 1"), {
+          status: 1,
+        });
       }
-
-      vi.mocked(readFileSync).mockReturnValue(JSON.stringify(fakes.plan));
 
       return "";
     }
@@ -124,13 +144,26 @@ function fake(fakes: Fakes): void {
       const revision = rest.at(-1) ?? "";
 
       return Object.keys(files[revision] ?? {})
-        .map((file) => `${file}\0`)
+        .map((file) => `100644 blob ${revision}:${file}\t${file}\0`)
         .join("");
     }
 
-    const [revision = "", file = ""] = (rest[0] ?? "").split(":");
+    // `git cat-file --batch`, where each object id is `<revision>:<path>`.
+    const input = typeof options?.input === "string" ? options.input : "";
+    const objects = input.split("\n").filter((object) => object !== "");
 
-    return files[revision]?.[file] ?? "";
+    return Buffer.concat(
+      objects.map((object) => {
+        const [revision = "", file = ""] = object.split(":");
+        const content = Buffer.from(files[revision]?.[file] ?? "");
+
+        return Buffer.concat([
+          Buffer.from(`${object} blob ${String(content.length)}\n`),
+          content,
+          Buffer.from("\n"),
+        ]);
+      })
+    );
   });
 }
 
@@ -423,6 +456,41 @@ describe("main", () => {
     // Then - it needs a changeset that releases a package.
     expect(code).toBe(expected);
     expect(printed()).toStrictEqual([message]);
+  });
+
+  test("asks a shipping source change for a release, packing its package", () => {
+    // Given - a Renovate PR that changes a file `@acme/a` publishes.
+    const files = {
+      "packages/a/package.json": manifest("^4.0.0"),
+      "packages/a/src/index.ts": "export const a = 1;",
+      "pnpm-workspace.yaml": WORKSPACE,
+    };
+
+    fake({
+      changed: ["packages/a/src/index.ts"],
+      files: { "base-sha": files, HEAD: files },
+      packed: { "packages/a": ["package.json", "src/index.ts"] },
+      plan: {
+        changesets: [{ id: "a", releases: [] }],
+        releases: [{ name: "@acme/a", type: "patch" }],
+      },
+    });
+
+    // When - the check runs.
+    const code = main(RENOVATE_PR);
+
+    // Then - it packed the package with scripts and the pnpmfile off, and the release passes.
+    expect(code).toBe(0);
+
+    expect(execFileSync).toHaveBeenCalledWith(
+      "pnpm",
+      ["pack", "--dry-run", "--json", "--ignore-scripts", "--ignore-pnpmfile"],
+      expect.objectContaining({ cwd: "packages/a" })
+    );
+
+    expect(printed()).toStrictEqual([
+      "This Renovate PR's changeset releases @acme/a.",
+    ]);
   });
 
   test.each([

@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 
 import type { Environment } from "../../lib/src/environment.ts";
-import type { RenovateChange, Tree } from "./ships.ts";
+import type { RenovateChange } from "./ships.ts";
 
 import { annotate, describeError } from "../../lib/src/annotate.ts";
 import {
@@ -10,6 +10,7 @@ import {
 } from "../../lib/src/changeset-status.ts";
 import { MAX_BUFFER } from "../../lib/src/environment.ts";
 import { classifyPullRequest, parseLines } from "./branches.ts";
+import { git, packFiles, readRevisions, splitNul } from "./readers.ts";
 import { analyzeRenovateChange } from "./ships.ts";
 import { judgeReleasePlan, statusFailureHint } from "./status.ts";
 
@@ -165,39 +166,6 @@ function findCheckoutError(baseRef: string): string | undefined {
 }
 
 /**
- * Runs git and returns what it prints.
- *
- * @param args - git's arguments.
- * @returns its stdout, untrimmed.
- */
-function git(args: readonly string[]): string {
-  return execFileSync("git", args, {
-    encoding: "utf8",
-    maxBuffer: MAX_BUFFER,
-  });
-}
-
-/**
- * Reads one revision's files through git; the Renovate analysis caches what
- * it reads, and checks existence against the listing.
- *
- * @param revision - the commit to read, such as `HEAD`.
- * @returns the revision's tree.
- */
-function gitTree(revision: string): Tree {
-  const files = git(["ls-tree", "-r", "--name-only", "-z", revision])
-    .split("\0")
-    .filter((file) => file !== "");
-  const fileSet = new Set(files);
-
-  return {
-    list: () => files,
-    read: (file) =>
-      fileSet.has(file) ? git(["show", `${revision}:${file}`]) : undefined,
-  };
-}
-
-/**
  * Parses YAML through `yq`, which GitHub's Ubuntu runners ship.
  *
  * @param text - the YAML text.
@@ -219,28 +187,23 @@ function parseYaml(text: string): unknown {
  * base so a base branch that moved on doesn't count.
  *
  * - Renames are listed as a deletion and an addition, so a file moved out of a
- *   package counts against it.
+ *   package needs a changeset there, as any deleted file does.
+ *
+ * - Both revisions' manifests are read through one `git cat-file --batch`.
  *
  * @param baseRef - the base branch's remote ref.
  * @returns the change's kind and the packages it ships.
  */
 function renovateChange(baseRef: string): RenovateChange {
   const mergeBase = git(["merge-base", baseRef, "HEAD"]).trim();
-  const changedFiles = git([
-    "diff",
-    "--name-only",
-    "--no-renames",
-    "-z",
-    mergeBase,
-    "HEAD",
-  ])
-    .split("\0")
-    .filter((file) => file !== "");
+  const changedFiles = splitNul(
+    git(["diff", "--name-only", "--no-renames", "-z", mergeBase, "HEAD"])
+  );
 
   return analyzeRenovateChange({
-    after: gitTree("HEAD"),
-    before: gitTree(mergeBase),
+    ...readRevisions({ after: "HEAD", before: mergeBase }),
     changedFiles,
+    packFiles,
     parseYaml,
   });
 }

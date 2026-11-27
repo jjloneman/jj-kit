@@ -1,11 +1,5 @@
 import { execFileSync } from "node:child_process";
-import {
-  appendFileSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { appendFileSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import type { Environment } from "../../lib/src/environment.ts";
@@ -14,9 +8,10 @@ import type { ReadPlan, ReleaseDecision } from "./decide.ts";
 import { annotate, describeError } from "../../lib/src/annotate.ts";
 import {
   checkChangesetsCli,
+  runChangesetJson,
   runChangesetStatus,
 } from "../../lib/src/changeset-status.ts";
-import { MAX_BUFFER, tempFolder } from "../../lib/src/environment.ts";
+import { MAX_BUFFER } from "../../lib/src/environment.ts";
 import { decideRelease } from "./decide.ts";
 import { splitPublishPlan } from "./publish-plan.ts";
 import { readDependencies } from "./workspace.ts";
@@ -97,8 +92,6 @@ export function main(env: Environment): number {
  * the plan it writes, holding back its `0.0.0` entries and their dependents,
  * and writes the kept plan beside it.
  *
- * - Its own output goes to the log, so a failure explains itself there.
- *
  * - The raw file is removed once read, and the whole folder when anything
  *   fails.
  *
@@ -106,42 +99,40 @@ export function main(env: Environment): number {
  * @returns the plan, and the kept plan's file.
  */
 function readPublishPlan(env: Environment): ReadPlan {
-  const folder = mkdtempSync(
-    path.join(tempFolder(env), "changesets-publish-plan-")
-  );
-  const rawFile = path.join(folder, RAW_PLAN_FILE);
-  const file = path.join(folder, PLAN_FILE);
+  const plan = runChangesetJson({
+    args: ["publish-plan"],
+    env,
+    fileName: RAW_PLAN_FILE,
+    prefix: "changesets-publish-plan-",
+    read: ({ file, folder, text }) => {
+      const split = splitPublishPlan({
+        dependenciesOf: () =>
+          readDependencies({
+            listing: execFileSync(
+              "pnpm",
+              ["-r", "ls", "--depth", "-1", "--json"],
+              { encoding: "utf8", maxBuffer: MAX_BUFFER }
+            ),
+            readManifest: (packageFolder) =>
+              readFileSync(path.join(packageFolder, "package.json"), "utf8"),
+          }),
+        text,
+      });
+      const keptFile = path.join(folder, PLAN_FILE);
 
-  try {
-    execFileSync(
-      "pnpm",
-      ["exec", "changeset", "publish-plan", `--output=${rawFile}`],
-      { stdio: "inherit" }
-    );
+      rmSync(file, { force: true });
+      writeFileSync(keptFile, split.text);
 
-    const plan = splitPublishPlan({
-      dependenciesOf: () =>
-        readDependencies({
-          listing: execFileSync(
-            "pnpm",
-            ["-r", "ls", "--depth", "-1", "--json"],
-            { encoding: "utf8", maxBuffer: MAX_BUFFER }
-          ),
-          readManifest: (packageFolder) =>
-            readFileSync(path.join(packageFolder, "package.json"), "utf8"),
-        }),
-      text: readFileSync(rawFile, "utf8"),
-    });
+      return { entries: split.entries, file: keptFile, held: split.held };
+    },
+    shouldKeep: true,
+  });
 
-    rmSync(rawFile, { force: true });
-    writeFileSync(file, plan.text);
-
-    return { entries: plan.entries, file, held: plan.held };
-  } catch (error: unknown) {
-    rmSync(folder, { force: true, recursive: true });
-
-    throw error;
+  if (plan === undefined) {
+    throw new Error("changeset publish-plan failed; see its output above.");
   }
+
+  return plan;
 }
 
 /**

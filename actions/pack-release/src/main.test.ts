@@ -63,11 +63,15 @@ function fake(fakes: Fakes): void {
     }
 
     if (args.includes("status") && changesets === undefined) {
-      throw new Error("changeset status exited with 1");
+      throw Object.assign(new Error("changeset status exited with 1"), {
+        status: 1,
+      });
     }
 
     if (args.includes("publish-plan") && plan === undefined) {
-      throw new Error("changeset publish-plan exited with 1");
+      throw Object.assign(new Error("changeset publish-plan exited with 1"), {
+        status: 1,
+      });
     }
 
     return args.includes("ls") ? JSON.stringify([{ path: "/repo/a" }]) : "";
@@ -273,7 +277,7 @@ describe("main", () => {
     );
 
     expect(printed()).toStrictEqual([
-      "::error::changeset publish-plan exited with 1",
+      "::error::changeset publish-plan failed; see its output above.",
     ]);
   });
 

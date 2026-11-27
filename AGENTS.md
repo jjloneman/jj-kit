@@ -30,7 +30,9 @@
   - `setup/` — installs pnpm, Node and the frozen-lockfile dependency tree; the
     prelude every CI job shares, with no code of its own.
   - `version-or-release/` — keeps the version PR open, or publishes what
-    `pack-release` packed, with no code of its own.
+    `pack-release` packed, with no code of its own beyond
+    `resolve-changesets-cli.sh`, its check that the CLI resolves, which `ci.yml`
+    runs too.
   - `lib/` — code the two TypeScript actions share, such as annotations, reading
     the release plan and the Node check; not an action.
     - The actions import it by relative path (`../../lib/src/…`), since a
@@ -248,7 +250,7 @@
 ## ✅ Pre-commit checks
 
 - **Run `pnpm check` before committing**, every gate CI requires except
-  `🦋 Changeset`:
+  `🦋 Changeset` and `🚀 Release install`:
   - it fixes lint and formatting;
   - then runs the typecheck, the tests with coverage and the package checks.
   - It rewrites files, so read the diff after.
@@ -268,7 +270,9 @@
   - `🧹 Lint & format`;
   - `🔷 Typecheck`;
   - `🧪 Tests`, with coverage;
-  - `📦 Package`, `pnpm lint:package` in each package that defines it.
+  - `📦 Package`, `pnpm lint:package` in each package that defines it;
+  - `🚀 Release install`, which installs only the root's `dependencies`, as the
+    release job does, and runs `changeset version` on a fabricated changeset.
 - **On a PR it also runs `🦋 Changeset`**, through the kit's own
   [require-changeset](actions/require-changeset/action.yml) action, which fails
   when the PR adds or edits no changeset, judged by `changeset status`'s own
@@ -370,9 +374,10 @@
   - anything `.changeset/config.json` loads goes there too, with what it imports
     at runtime and its peers;
   - `.changeset/config.json` keeps `"format": false`, since no formatter is
-    installed there;
-  - no PR's CI runs that install, so a miss fails only the release job on
-    `main`.
+    installed there.
+  - **`ci.yml`'s `🚀 Release install` runs that install and the version path**
+    on every PR and push to `main`, so a miss fails there first; the publish
+    path isn't run in CI.
   - See
     [Why the release builds without write access](docs/decisions/unprivileged-release-build.md).
 - **Empty changesets never release.**

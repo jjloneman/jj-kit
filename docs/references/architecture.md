@@ -20,8 +20,8 @@ tags:
   - type-stripping
   - version-pr
   - workspace
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T03:32:26Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T05:35:15Z }
 verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
 ---
 
@@ -106,6 +106,8 @@ graph LR
   - `🧪 Tests`, with a 100% coverage gate over `actions/*/src` and
     `packages/*/src`;
   - `📦 Package`, which builds each package and checks it with publint and attw;
+  - `🚀 Release install`, which installs only the root's `dependencies`, as the
+    release job does, and runs `changeset version` on a fabricated changeset;
   - `🦋 Changeset`, on PRs only, through `./actions/require-changeset`.
 - `release.yml` runs on every push to `main`, in two jobs:
   - `📦 Plan and pack`, with `contents: read` alone, runs

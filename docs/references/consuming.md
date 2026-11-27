@@ -21,8 +21,8 @@ tags:
   - renovate
   - setup-action
   - version-pr
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T04:58:39Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T05:57:29Z }
 verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
 ---
 
@@ -210,6 +210,13 @@ verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
   - Set `"format": false` in `.changeset/config.json`, or put the formatter it
     would run, such as Prettier and its plugins, in the root's `dependencies`
     too, since Changesets formats the CHANGELOGs it writes.
+  - A miss otherwise fails only the release job on the release branch, so a
+    workspace can run the same install in a PR job, as jj-kit's `ci.yml` does in
+    `🚀 Release install`, then `changeset version` on a fabricated changeset.
+    - Give that job the same checkout as the release job, so it fails where that
+      one would.
+  - `version-or-release` checks that `@changesets/cli` resolves from the repo
+    root, and fails naming the root's `dependencies` when it doesn't.
   - It needs `setup` 0.2.0 or later, like `cache`.
   - It needs `cache: false` too, or `setup` fails: a store saved from it would
     hold only the root's `dependencies`, and every full install would then
@@ -295,6 +302,11 @@ verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
   - Without them, Changesets asks `git ls-remote`, which fails in a private repo
     once `persist-credentials` is off, so every private package looks untagged
     and each run tries to tag it again.
+- **In a private repo, give the release job's checkout `fetch-depth: 0`.**
+  - On a shallow clone, `changeset version` runs `git fetch --deepen` to find
+    the commit that added each changeset, and `changesets/action` v2.1.2 gives
+    that fetch no credentials, so it fails and no version PR opens.
+  - A public repo's fetch needs none, so a shallow checkout works there.
 - **Pass `build-script` whenever anything publishes to npm**, or `"true"` when
   nothing needs building; left empty, `pack-release` fails rather than publish
   packages without their build output.

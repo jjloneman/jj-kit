@@ -5,7 +5,7 @@ description:
   The kit's actions run on a Linux or macOS runner after the consumer's own
   setup step, with Node 26, pnpm, `@changesets/cli` 3 or later and, for a
   Renovate PR, pnpm 10.26 or later and `yq` v4; they fail clearly when Node or
-  the Changesets CLI is too old, rather than bringing their own.
+  the Changesets CLI is too old or missing, rather than bringing their own.
 tags:
   - actions
   - changesets
@@ -20,8 +20,8 @@ sources:
   - id: node-matches-glob
     resource: https://nodejs.org/api/path.html#pathmatchesglobpath-pattern
     title: Node.js, path.matchesGlob
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T03:53:18Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T05:57:29Z }
 verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
 ---
 
@@ -45,6 +45,11 @@ verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
   - **`version-or-release` needs only the root's `dependencies` installed**: the
     Changesets CLI, what `.changeset/config.json` loads, and, unless `format` is
     false, its formatter; so its job can pass `setup`'s `install: root` (#31).
+  - **`version-or-release` checks first that `@changesets/cli` resolves from the
+    repo root**, as `changesets/action` v2.1.2 resolves its `bin.js`, and fails
+    naming `install: root` and the root's `dependencies` (#35).
+    - Without it, a repo that passes `install: root` but keeps the CLI in
+      `devDependencies` gets only the sub-action's bare resolve error.
   - **Rejected: installing Node and pnpm inside each action,** which would
     duplicate the consumer's setup, and the kit's own `setup` action (#6).
 - **Node 26 or later**, since the actions' scripts are TypeScript that Node runs
@@ -56,9 +61,9 @@ verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
   read: absent means private packages are neither versioned nor tagged.
   - `pack-release` and `require-changeset` check `changeset --version`, reading
     its last line, and fail on an older or unreadable version.
-  - `version-or-release` runs no code of its own: it runs after `pack-release`'s
-    job, which has checked, and Changesets' sub-actions refuse a declared v2
-    themselves (#23).
+  - `version-or-release` doesn't check the CLI's version: it runs after
+    `pack-release`'s job, which has checked, and Changesets' sub-actions refuse
+    a declared v2 themselves (#23).
   - `pack-release` also fails on a publish plan in a format other than
     `version: 1`, since `changeset publish-plan --output` is experimental as of
     `@changesets/cli` 3.0.3 (#23).

@@ -40,8 +40,8 @@ sources:
   - id: pnpm-action-setup-cache
     resource: https://github.com/pnpm/action-setup/tree/v6.1.1/src
     title: pnpm/action-setup v6.1.1, its cache restore and save
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T04:33:21Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T05:35:15Z }
 verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
 ---
 
@@ -173,9 +173,17 @@ verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
   to `main`, and the release job another whenever it runs.
   - So only the build's own dependencies can change what's built, not a tool
     that runs in `ci.yml` alone.
-- **A package the version or publish path needs but the root's `dependencies`
-  lack fails at release time**, not in a PR's CI, since no `ci.yml` job runs the
-  narrow install.
+- **A package the version path needs but the root's `dependencies` lack fails in
+  a PR's CI**, in `ci.yml`'s `🚀 Release install`, which runs the narrow install
+  with `contents: read` alone, then `changeset version` on a fabricated
+  changeset (#35).
+  - It runs the CLI as `changesets/action` does, `node` on the `bin.js` it
+    resolves from the repo root.
+  - The publish path needs a pack and a registry, so a miss only it hits still
+    fails at release time.
+  - **Rejected: `changeset status` in that job**, which needs the base branch's
+    history and fails on a package changed without a changeset, so it would test
+    the PR rather than the install.
   - A consumer whose `.changeset/config.json` loads plugins, such as a changelog
     package, lists them there too, and sets `format: false` or adds its
     formatter.

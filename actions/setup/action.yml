@@ -115,7 +115,7 @@ runs:
     # - The `pnpm install` below still has to link node_modules out of the
     #   store, which no store cache can remove.
     - name: 📦 Install pnpm
-      uses: pnpm/action-setup@v6.1.1
+      uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       with:
         cache: ${{ inputs.cache }}
 
@@ -125,7 +125,7 @@ runs:
     # - Its own automatic cache stays off, since pnpm/action-setup owns the
     #   store cache and `cache: false` turns off only that one.
     - name: 🟢 Install Node
-      uses: actions/setup-node@v7.1.0
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
         node-version: ${{ inputs.node-version }}
         package-manager-cache: false

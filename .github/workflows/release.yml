@@ -40,7 +40,7 @@ jobs:
     steps:
       # The tags let Changesets see what's tagged without `git ls-remote`,
       # which fails without credentials in a private repo.
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-tags: true
           persist-credentials: false
@@ -74,7 +74,7 @@ jobs:
     steps:
       # changesets/action v2 pushes through the API with its own token, so
       # install scripts never see a persisted write token.
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 

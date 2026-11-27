@@ -11,6 +11,7 @@ tags:
   - dogfooding
   - git-tags
   - kit-changesets-changelog
+  - kit-tsconfig
   - layout
   - npm
   - packages
@@ -21,18 +22,18 @@ tags:
   - type-stripping
   - version-pr
   - workspace
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T06:50:03Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T23:17:48Z }
 verified: { by: human:jjloneman, at: 2026-11-27T07:29:02Z }
 ---
 
 # Architecture
 
-- **As of 2026-11-26.** The workspace, CI and release pipeline are in place;
-  `kit-changesets-changelog` (#4) is the first package built, and
-  `require-changeset` and `version-or-release` (#5), then `setup` (#6), the
-  first actions, with `pack-release` (#23) splitting the release into an
-  unprivileged build and a privileged publish.
+- **As of 2026-11-27.** The workspace, CI and release pipeline are in place;
+  `kit-changesets-changelog` (#4) is the first package built, then
+  `kit-tsconfig` (#8), and `require-changeset` and `version-or-release` (#5),
+  then `setup` (#6), the first actions, with `pack-release` (#23) splitting the
+  release into an unprivileged build and a privileged publish.
 - Each package and action issue updates this page in the same PR.
 - Why it's built this way is in the [decisions bundle](../decisions/index.md).
 
@@ -60,8 +61,9 @@ verified: { by: human:jjloneman, at: 2026-11-27T07:29:02Z }
 - `.github/`: `workflows/ci.yml`, `workflows/release.yml` and the ruleset
   protecting `main`.
 - Root configs:
-  - ESLint, Prettier and TypeScript, each copied from okf-tools until its
-    package lands;
+  - ESLint and Prettier, each copied from okf-tools until its package lands;
+  - TypeScript, whose root `tsconfig.json`, like every package's and action's,
+    extends `kit-tsconfig`'s `lib.json` and `node.json`;
   - Vitest, which runs every package's tests as one workspace and has no kit
     package.
 

@@ -50,7 +50,17 @@
   - `changesets-changelog/` — `@jjloneman/kit-changesets-changelog`, the gitmoji
     changelog formatter, which jj-kit's own `.changeset/config.json` loads from
     source.
-  - Each package's `tsconfig.json` is copied from okf-tools until #8.
+  - `tsconfig/` — `@jjloneman/kit-tsconfig`, the shared `tsconfig` bases, JSON
+    only, with no build; its tests write fixture projects to a temp folder and
+    run tsc over them.
+  - **Every `tsconfig.json` in jj-kit extends `kit-tsconfig`'s `lib.json` and
+    `node.json`**, through a `workspace:*` dev dependency, except
+    `kit-tsconfig`'s own, which extends them by relative path.
+    - `lib.json` brings `isolatedDeclarations`, which enforces the declared
+      return types in [Code style](#-code-style); no ESLint rule does.
+    - `node.json` brings `nodenext` and `.ts` import specifiers, since Node runs
+      the actions and `changesets-changelog`'s source unbuilt, and the root's
+      `.ts` configs load from source too.
 - `docs/decisions/` and `docs/references/` — the repo's own OKF bundles (see
   [Design decisions](#-design-decisions)).
 - `.changeset/` — pending changesets (see
@@ -66,9 +76,9 @@
 - `eslint-rules/` — the local `no-dotted-jsdoc-param` rule, loaded by
   `eslint.config.ts` (#9 replaces it).
 - Root configs:
-  - `eslint.config.ts` (#10), `prettier.config.ts` (#7) and `tsconfig.json`,
-    which covers the root's own files only (#8), each copied from okf-tools
-    until the package that replaces it lands;
+  - `eslint.config.ts` (#10) and `prettier.config.ts` (#7), each copied from
+    okf-tools until the package that replaces it lands;
+  - `tsconfig.json`, which covers the root's own files only;
   - `vitest.config.ts`, one Vitest project per package and action, which no kit
     package replaces.
 - `pnpm-workspace.yaml` — the workspace, the shared `catalog` of dev dependency

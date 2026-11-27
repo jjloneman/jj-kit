@@ -16,8 +16,8 @@ sources:
   - id: setup-node-version-file
     resource: https://github.com/actions/setup-node/blob/v7.1.0/docs/advanced-usage.md
     title: actions/setup-node, advanced usage
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T19:09:51Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T23:17:48Z }
 verified: { by: human:jjloneman, at: 2026-11-26T19:29:41Z }
 ---
 
@@ -55,8 +55,8 @@ verified: { by: human:jjloneman, at: 2026-11-26T19:29:41Z }
     releases stay on Node 26.
   - A consumer that refuses older Node at install, as jj-kit's own `devEngines`
     does, can't run such a job, so it leaves that guard out.
-  - It keeps `@types/node` at its own floor; `kit-tsconfig` doesn't pin one
-    (#8).
+  - It keeps `@types/node` at its own floor, which `kit-tsconfig` doesn't pin,
+    and lowers that package's `es2025` `target` and `lib` to match (#8).
 
 ## Why
 

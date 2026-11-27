@@ -69,8 +69,18 @@ repo inherits
 
 ### kit-tsconfig
 
-- 🚧 Coming in #8: `base.json`, `node.json`, `bundler.json` and `lib.json`,
-  split by how the code runs.
+- Shared `tsconfig` bases, split by how the code runs, which jj-kit's own
+  configs extend:
+
+| File           | Extend it for                                               |
+| -------------- | ----------------------------------------------------------- |
+| `node.json`    | Scripts, configs and actions Node runs under type stripping |
+| `bundler.json` | Apps a bundler builds                                       |
+| `lib.json`     | Published libraries, built to `dist/`                       |
+| `base.json`    | Only the strict checks, with no module settings             |
+
+- Its [README](packages/tsconfig/README.md) has what each sets and how to
+  compose two.
 
 ### kit-git-hooks
 
@@ -281,7 +291,7 @@ pnpm check
     `pnpm build && publint && attw --pack --profile esm-only`, which CI's
     `📦 Package` job runs.
   - A JSON-only package, such as `kit-tsconfig`, has no build config, and its
-    `lint:package` runs publint alone (#8).
+    `lint:package` runs publint alone.
 - Tests run as one Vitest workspace from the root, with a 100% coverage gate
   over `actions/*/src` and `packages/*/src`.
 - JSON keys, `package.json` included, stay alphabetized at every level;

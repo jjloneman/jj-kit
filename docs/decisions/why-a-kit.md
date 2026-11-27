@@ -14,8 +14,8 @@ tags:
   - drift
   - packages
   - renovate
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T01:49:34Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T04:58:39Z }
 verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
 ---
 
@@ -34,6 +34,9 @@ verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
 - **As of 2026-11-25.**
 - **Configs and scripts ship as npm packages** under `@jjloneman/kit-*`, which
   each repo installs as exact-pinned dev dependencies.
+  - A workspace whose release job installs only the root's `dependencies`,
+    through `setup`'s `install: root`, puts `kit-changesets-changelog` there
+    instead, since that job loads it (#31).
   - **Rejected: a template repo.** Its copies drift the day they're made, which
     is the problem the kit exists to solve.
   - **Rejected: a central runner that lints every repo.** Repos would stop being
@@ -77,3 +80,5 @@ verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
 
 - #1, the roadmap.
 - #3, which records this decision.
+- #31, which makes the changelog formatter a root dependency under
+  `install: root`.

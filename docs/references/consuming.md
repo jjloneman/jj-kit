@@ -21,8 +21,8 @@ tags:
   - renovate
   - setup-action
   - version-pr
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T23:48:28Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T04:58:39Z }
 verified: { by: human:jjloneman, at: 2026-11-26T23:57:25Z }
 ---
 
@@ -49,6 +49,9 @@ verified: { by: human:jjloneman, at: 2026-11-26T23:57:25Z }
   pnpm add --save-dev --save-exact @jjloneman/kit-<name>
   ```
 
+  - `kit-changesets-changelog` is the exception in a workspace whose release job
+    passes `install: root`; see [its section](#kit-changesets-changelog).
+
 ## Dependency moratorium
 
 - **A repo with a release-age floor excludes the owner's own packages**, so a
@@ -73,6 +76,14 @@ verified: { by: human:jjloneman, at: 2026-11-26T23:57:25Z }
   ```json
   { "changelog": "@jjloneman/kit-changesets-changelog" }
   ```
+
+  - **In a workspace whose release job passes `setup`'s `install: root`**,
+    install it into the root's `dependencies` instead, with `@changesets/cli`,
+    which it peers on, since that job installs nothing else:
+
+    ```sh
+    pnpm add --save-exact -w @jjloneman/kit-changesets-changelog
+    ```
 
 - **Delete** any copied formatter script and the `changelog` path that loaded
   it.
@@ -118,7 +129,8 @@ verified: { by: human:jjloneman, at: 2026-11-26T23:57:25Z }
 - **Run `setup` before the others**, after the checkout, so they find pnpm, Node
   26 and the workspace installed.
   - It installs only what the repo's lockfile lists, so the repo itself depends
-    on `@changesets/cli` 3 or later.
+    on `@changesets/cli` 3 or later, in its root's `dependencies` when the
+    release job passes `install: root`.
 
 ### require-changeset
 
@@ -187,6 +199,23 @@ verified: { by: human:jjloneman, at: 2026-11-26T23:57:25Z }
   - A job that can request an OIDC token gets a warning while the cache is on;
     one holding only `contents: write` doesn't, since nothing in its environment
     shows it.
+- **It installs the whole workspace unless told otherwise.**
+  - **`install: root` installs only the root's `dependencies`**, skipping
+    devDependencies and every workspace package, for the release job below,
+    which runs only the Changesets CLI.
+  - Move `@changesets/cli`, and every package `.changeset/config.json` loads,
+    such as a changelog package, into the root's `dependencies` first, with what
+    those import at runtime and their peers; a private workspace root never
+    publishes them.
+  - Set `"format": false` in `.changeset/config.json`, or put the formatter it
+    would run, such as Prettier and its plugins, in the root's `dependencies`
+    too, since Changesets formats the CHANGELOGs it writes.
+  - It needs `setup` 0.2.0 or later, like `cache`.
+  - It needs `cache: false` too, or `setup` fails: a store saved from it would
+    hold only the root's `dependencies`, and every full install would then
+    restore it under the lockfile's key and never save a fuller one.
+  - A single-package repo that publishes keeps the default, since its
+    `dependencies` ship.
 - **Keep extra setup**, such as a browser install or a second lockfile, as a
   local step after this one.
 - **Delete** the repo's own `.github/actions/setup` once every job uses the
@@ -244,6 +273,7 @@ verified: { by: human:jjloneman, at: 2026-11-26T23:57:25Z }
       - uses: jjloneman/jj-kit/actions/setup@<sha> # setup@<version>
         with:
           cache: false
+          install: root
 
       - uses: jjloneman/jj-kit/actions/version-or-release@<sha> # version-or-release@<version>
         with:
@@ -258,6 +288,9 @@ verified: { by: human:jjloneman, at: 2026-11-26T23:57:25Z }
   [Why the release builds without write access](../decisions/unprivileged-release-build.md)).
 - **Pass `cache: false` to `setup` in both jobs**, as the [setup](#setup)
   section says.
+- **Pass `install: root` in the release job alone**, which then links only the
+  Changesets CLI's tree, not the dev tools; the plan job builds, so it keeps the
+  whole install.
 - **Fetch the tags in the plan job's checkout**, with `fetch-tags: true`.
   - Without them, Changesets asks `git ls-remote`, which fails in a private repo
     once `persist-credentials` is off, so every private package looks untagged

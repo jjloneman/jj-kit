@@ -20,8 +20,8 @@ tags:
   - type-stripping
   - version-pr
   - workspace
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T23:48:28Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T03:32:26Z }
 verified: { by: human:jjloneman, at: 2026-11-26T23:57:25Z }
 ---
 
@@ -117,6 +117,8 @@ graph LR
   - `ci.yml`'s jobs cache the pnpm store; both `release.yml` jobs pass
     `cache: false`, so no store a CI job saved reaches the build that's
     published or the job that can push and publish.
+  - The release job also passes `install: root`, so it installs only the root's
+    `dependencies`, the Changesets CLI, and none of the dev tools.
 - jj-kit uses its own actions by local path, so a PR's CI runs them as the PR
   changes them.
 - Every `ci.yml` job is a required check on `main`, through

@@ -361,7 +361,20 @@
   - Each line takes the gitmoji and scope of the PR title that added the
     changeset, so a PR title that breaks the commit conventions loses them.
   - The source must stay erasable syntax with `.ts` import specifiers.
+  - At runtime it imports only Node built-ins, since the release job installs
+    nothing else for it (see below).
   - See [How changelog lines are built](docs/decisions/changelog-format.md).
+- **The release job installs only the root's `dependencies`**, through `setup`'s
+  `install: root`, so:
+  - `@changesets/cli` stays in the root's `dependencies`, not `devDependencies`;
+  - anything `.changeset/config.json` loads goes there too, with what it imports
+    at runtime and its peers;
+  - `.changeset/config.json` keeps `"format": false`, since no formatter is
+    installed there;
+  - no PR's CI runs that install, so a miss fails only the release job on
+    `main`.
+  - See
+    [Why the release builds without write access](docs/decisions/unprivileged-release-build.md).
 - **Empty changesets never release.**
   - `release.yml` opens no version PR while every pending changeset is empty.
   - Instead, `pack-release` publishes past them whenever

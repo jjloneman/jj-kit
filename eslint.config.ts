@@ -15,6 +15,15 @@ import path from "node:path";
 import { configs as tsConfigs } from "typescript-eslint";
 
 import { NO_DOTTED_JSDOC_PARAM } from "./eslint-rules/no-dotted-jsdoc-param";
+import { PINNED_USES } from "./eslint-rules/pinned-uses";
+
+/** The repo's local rules, registered once so every block shares them. */
+const LOCAL_PLUGIN = {
+  rules: {
+    "no-dotted-jsdoc-param": NO_DOTTED_JSDOC_PARAM,
+    "pinned-uses": PINNED_USES,
+  },
+};
 
 /**
  * One `yml/sort-keys` option: the mappings whose path matches `pathPattern`
@@ -88,7 +97,7 @@ const CONFIG: Linter.Config[] = defineConfig(
       },
     },
     plugins: {
-      local: { rules: { "no-dotted-jsdoc-param": NO_DOTTED_JSDOC_PARAM } },
+      local: LOCAL_PLUGIN,
       tsdoc: tsdocPlugin,
     },
     rules: {
@@ -274,7 +283,12 @@ const CONFIG: Linter.Config[] = defineConfig(
    */
   {
     files: [".github/**/*.yml", "actions/*/action.yml"],
+    plugins: { local: LOCAL_PLUGIN },
     rules: {
+      // Every `uses:` is a local path or a full-SHA pin with its tag, so an
+      // upstream can't move a tag under the kit's actions or its workflows.
+      "local/pinned-uses": "error",
+
       "yml/sort-keys": [
         "error",
 

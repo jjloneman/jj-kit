@@ -50,9 +50,14 @@ const CONFIG: ViteUserConfig = defineConfig({
       thresholds: { 100: true },
     },
 
-    // Each package and action is its own Vitest project, configured by its own
-    // `vitest.config.ts` when it needs more than the defaults.
-    projects: PACKAGE_DIRS,
+    /*
+     * Each package and action is its own Vitest project, configured by its own
+     * `vitest.config.ts` when it needs more than the defaults.
+     *
+     * - `eslint-rules/` is one too, for the local rules' tests, though it has
+     *   no `package.json` and sits outside the coverage gate.
+     */
+    projects: [...PACKAGE_DIRS, "eslint-rules"],
   },
 });
 

@@ -71,6 +71,12 @@ jobs:
       # After ESLint, so the richer error surfaces first when both fail.
       - run: pnpm format:check
 
+      # Each third-party pin's SHA must be the commit its tag names, which
+      # ESLint can't check offline.
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: .github/scripts/check-action-pins.sh
+
   package:
     name: 📦 Package
     runs-on: ubuntu-latest

@@ -5,6 +5,7 @@
   "changelog": "../packages/changesets-changelog/src/index.ts",
   "commit": false,
   "fixed": [],
+  "format": false,
   "ignore": [],
   "linked": [],
   "privatePackages": { "tag": true, "version": true },

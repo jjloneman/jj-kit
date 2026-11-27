@@ -1,0 +1,38 @@
+/*
+ * The checks every project shares, with no module settings; `node.json`,
+ * `bundler.json` and `lib.json` each extend it.
+ *
+ * - No paths are set here: `include`, `outDir` and `rootDir` resolve against
+ *   the file that sets them, so they belong in the consumer's own config.
+ *
+ * - `noEmit` stays out of it, so `lib.json` can emit declarations.
+ */
+{
+  "compilerOptions": {
+    // Bans syntax that emits code, such as an `enum`, so stripping the types
+    // always leaves plain JavaScript.
+    "erasableSyntaxOnly": true,
+
+    // Optional properties reject an explicit `undefined` unless the type
+    // includes it.
+    "exactOptionalPropertyTypes": true,
+
+    // Node 26 runs all of ES2025; a project for an older runtime lowers this
+    // and `target` together.
+    "lib": ["es2025"],
+
+    // Index access (`array[i]`, `record[key]`) includes `undefined` in its
+    // type.
+    "noUncheckedIndexedAccess": true,
+
+    // Skip checking `.d.ts` files in `node_modules`; they're not ours to fix.
+    "skipLibCheck": true,
+
+    "strict": true,
+    "target": "es2025",
+
+    // `import type` is required for type-only imports, and imports are emitted
+    // exactly as written.
+    "verbatimModuleSyntax": true
+  }
+}

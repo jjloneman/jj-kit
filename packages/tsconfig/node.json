@@ -1,0 +1,38 @@
+/*
+ * For code Node runs directly under type stripping, such as scripts, config
+ * files and GitHub Actions; nothing is emitted.
+ *
+ * - Pair it with `lib.json` in an `extends` array when the same code is also
+ *   published, as jj-kit's own configs do.
+ *
+ * - The project's `package.json` sets `"type": "module"`: under `nodenext`,
+ *   `verbatimModuleSyntax` rejects importing or exporting a value in a
+ *   CommonJS file.
+ */
+{
+  "compilerOptions": {
+    /*
+     * Relative imports name the `.ts` file.
+     *
+     * - Node's type stripping resolves only the real file name, and this
+     *   option needs `noEmit` below.
+     */
+    "allowImportingTsExtensions": true,
+
+    // Resolve and check imports exactly as Node does, including
+    // `package.json` `exports` and required file extensions.
+    "module": "nodenext",
+
+    // Typecheck only; Node runs the source as it is.
+    "noEmit": true,
+
+    /*
+     * TypeScript 6 defaults `types` to none, so Node's are opted in by name.
+     *
+     * - The consumer's `@types/node` sets the floor, so a typecheck rejects an
+     *   API its oldest supported Node doesn't have.
+     */
+    "types": ["node"]
+  },
+  "extends": "./base.json"
+}

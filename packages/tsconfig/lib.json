@@ -1,0 +1,36 @@
+/*
+ * For a published package, built to `dist/` by tsdown or tsc.
+ *
+ * - A package tsdown builds sets `noEmit` in its own config, unless it also
+ *   extends `node.json`, or a plain `tsc` typecheck writes `.js` and
+ *   `.d.ts` files beside its sources.
+ *
+ * - A package that emits with tsc sets `outDir` and `rootDir` there instead;
+ *   TypeScript 6 reports TS5011 when `outDir` is set without `rootDir`.
+ *
+ * - The package's `package.json` sets `"type": "module"`: under `nodenext`,
+ *   `verbatimModuleSyntax` rejects importing or exporting a value in a
+ *   CommonJS file.
+ *
+ * - Its `target` and `lib` come from `base.json`; a package that supports an
+ *   older Node than 26 lowers both.
+ */
+{
+  "compilerOptions": {
+    // Emit `.d.ts` files, which `isolatedDeclarations` also requires.
+    "declaration": true,
+
+    // Every export carries types a declaration emitter can read without the
+    // checker, so the published `.d.ts` never depends on inference.
+    "isolatedDeclarations": true,
+
+    // Resolve and check imports exactly as Node does, so the published code
+    // runs in Node unbundled.
+    "module": "nodenext",
+
+    // TypeScript 6 defaults `types` to none, so Node's are opted in by name;
+    // the consumer's `@types/node` sets the floor.
+    "types": ["node"]
+  },
+  "extends": "./base.json"
+}

@@ -1,0 +1,64 @@
+{
+  "author": {
+    "name": "JJ Loneman",
+    "url": "https://github.com/jjloneman"
+  },
+  "bugs": {
+    "url": "https://github.com/jjloneman/jj-kit/issues"
+  },
+  "description": "🔷 Shared tsconfig bases split by how the code runs: under Node's type stripping, through a bundler, or as a published library.",
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "publint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=26"
+  },
+  "exports": {
+    "./base.json": "./base.json",
+    "./bundler.json": "./bundler.json",
+    "./lib.json": "./lib.json",
+    "./node.json": "./node.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "CHANGELOG.md",
+    "base.json",
+    "bundler.json",
+    "lib.json",
+    "node.json"
+  ],
+  "homepage": "https://github.com/jjloneman/jj-kit/tree/main/packages/tsconfig#readme",
+  "keywords": [
+    "tsconfig",
+    "typescript"
+  ],
+  "license": "MIT",
+  "name": "@jjloneman/kit-tsconfig",
+  "peerDependencies": {
+    "@types/node": "*",
+    "typescript": "^6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@types/node": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "directory": "packages/tsconfig",
+    "type": "git",
+    "url": "git+https://github.com/jjloneman/jj-kit.git"
+  },
+  "scripts": {
+    "lint:package": "publint",
+    "typecheck": "tsc"
+  },
+  "type": "module",
+  "version": "0.0.0"
+}

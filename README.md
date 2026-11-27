@@ -92,7 +92,8 @@ repo inherits
 - **Run `setup` first**, after checking out the repo, so the others find pnpm,
   Node 26 and the workspace installed.
   - It installs only what the repo's lockfile lists, so the repo itself depends
-    on `@changesets/cli` 3 or later.
+    on `@changesets/cli` 3 or later, in its root's `dependencies` when the
+    release job passes `install: root`.
 - [Consuming the kit](docs/references/consuming.md) shows how to wire each one.
 
 ### require-changeset
@@ -171,6 +172,14 @@ repo inherits
   label in the repo.
 - **Pass `cache: false` to `setup` in its job**, which holds those permissions
   (see [setup](#setup)).
+- **In a workspace, pass `install: root` too**, so the job installs only the
+  root's `dependencies`.
+  - Those must hold `@changesets/cli` 3 or later, every package
+    `.changeset/config.json` loads, with what those import at runtime and their
+    peers, and, unless the config sets `"format": false`, the formatter
+    Changesets runs.
+  - A single-package repo that publishes keeps the default, since its
+    `dependencies` ship.
 - With `GITHUB_TOKEN`, the repo turns on "Allow GitHub Actions to create and
   approve pull requests", and the version PR's CI run waits for an approval
   click (see
@@ -202,6 +211,13 @@ repo inherits
   - It needs `setup` 0.2.0 or later; an older pin only warns about the unknown
     input and keeps the cache on.
   - A job that can request an OIDC token gets a warning while the cache is on.
+- **Pass `install: root` in a job that runs only what the root's `dependencies`
+  hold**, such as the job that versions or publishes, so it skips
+  devDependencies and every workspace package.
+  - It needs `setup` 0.2.0 or later; an older pin only warns about the unknown
+    input and installs the whole workspace.
+  - It needs `cache: false` too, or `setup` fails, since a store saved from it
+    would hold only the root's `dependencies`.
 - **Keep any extra setup**, such as a browser install, as a local step after
   this one.
 
@@ -216,6 +232,7 @@ repo inherits
 | Input          | Default  | What it does                                                                          |
 | -------------- | -------- | ------------------------------------------------------------------------------------- |
 | `cache`        | `"true"` | Whether to restore and save the pnpm store cache; `false` in either release job       |
+| `install`      | `all`    | `all` installs the whole workspace; `root`, only the root's `dependencies`            |
 | `node-version` | `"26"`   | The Node to install; pass an older one only for a job that tests published code on it |
 
 ## 📚 Design decisions

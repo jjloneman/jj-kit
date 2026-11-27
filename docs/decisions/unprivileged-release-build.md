@@ -5,21 +5,25 @@ description:
   "`release.yml` builds and packs in a job with `contents: read` alone, through
   `pack-release` and `changesets/action/pack`, and only a second job, which
   installs but never builds, holds `contents: write`, `pull-requests: write` and
-  `id-token: write` to open the version PR or publish the packed tarballs;
-  neither restores the pnpm store cache."
+  `id-token: write` to open the version PR or publish the packed tarballs,
+  installing only the root's `dependencies`; neither restores the pnpm store
+  cache."
 tags:
   - actions
   - build
   - changesets
   - ci
+  - formatting
   - github-actions
   - github-token
   - npm
   - permissions
   - pnpm
+  - prettier
   - releases
   - setup-action
   - supply-chain
+  - workspace
 sources:
   - id: changesets-action-pack
     resource: https://github.com/changesets/action/blob/v2.1.2/pack/README.md
@@ -27,6 +31,9 @@ sources:
   - id: changesets-action-run
     resource: https://github.com/changesets/action/blob/v2.1.2/src/run.ts
     title: changesets/action v2.1.2, src/run.ts
+  - id: changesets-action-utils
+    resource: https://github.com/changesets/action/blob/v2.1.2/src/utils.ts
+    title: changesets/action v2.1.2, src/utils.ts
   - id: id-token
     resource: https://docs.github.com/en/actions/concepts/security/openid-connect
     title: GitHub Docs, OpenID Connect
@@ -34,8 +41,8 @@ sources:
     resource: https://github.com/pnpm/action-setup/tree/v6.1.1/src
     title: pnpm/action-setup v6.1.1, its cache restore and save
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-26T23:51:20Z }
-verified: { by: human:jjloneman, at: 2026-11-26T23:57:25Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T04:33:21Z }
+verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
 ---
 
 # Why the release builds without write access
@@ -108,6 +115,35 @@ verified: { by: human:jjloneman, at: 2026-11-26T23:57:25Z }
     what's published, so an explicit input stays the one switch.
   - **Rejected: the cache off by default**, which would cost every unprivileged
     CI job its cache.
+- **The privileged job installs only the root's `dependencies`**, through
+  `setup`'s `install: root`, which runs
+  `pnpm install --frozen-lockfile --prod --filter .` (#31).
+  - As of 2026-11-27 that's `@changesets/cli` alone: 42 packages, against the
+    whole workspace's 295.
+  - `changesets/action` v2.1.2 reads the CLI's range from the root
+    `package.json` and resolves it from the repo root[^changesets-action-utils],
+    so the CLI sits in the root's `dependencies`, which the private root never
+    publishes.
+  - **`install: root` needs `cache: false`**, or `setup` fails: a store saved
+    from it would hold only the root's `dependencies`, under the same lockfile
+    key every full install restores and then never replaces.
+  - The changelog formatter imports only Node built-ins, plus types that are
+    erased, so it needs nothing installed.
+  - **`.changeset/config.json` sets `format: false`.**
+    - Changesets 3 otherwise runs `pnpm exec prettier` on the CHANGELOGs it
+      writes, which fails without Prettier installed.
+    - `CHANGELOG.md` is in `.prettierignore`, so that run changed nothing: a
+      version run with it off wrote the same files as one with it on.
+    - It also stops `pnpm changeset` formatting the changeset files it writes;
+      the pre-commit hook still formats them when they're committed.
+    - **Rejected: Prettier and its plugin in the root's `dependencies` too**,
+      which would install a formatter whose run changes nothing.
+  - **Rejected: `--filter .` with dev dependencies**, since the root holds every
+    dev tool: 219 packages.
+  - **Rejected: a release-only workspace package holding the CLI**, which then
+    resolves only from that package, not from the root the action reads.
+  - **Rejected: `pnpm dlx` of an exact `@changesets/cli`**, which skips the
+    lockfile and so the moratorium.
 - **Version and publish share the privileged job.**
   - **Rejected: a third job, so the version path never holds
     `id-token: write`.** It runs only the Changesets CLI and the changelog
@@ -128,9 +164,8 @@ verified: { by: human:jjloneman, at: 2026-11-26T23:57:25Z }
   the release job publishes; the split stops it pushing or publishing on its
   own, not poisoning the tarballs.
   - npm's provenance still names `release.yml`.
-- **The privileged job still installs the workspace and runs the Changesets
-  CLI**, whose publish step gets `GITHUB_TOKEN` in its
-  environment[^changesets-action-run].
+- **The privileged job still installs and runs the Changesets CLI**, whose
+  publish step gets `GITHUB_TOKEN` in its environment[^changesets-action-run].
   - pnpm 12 runs no dependency's build scripts unless the workspace allows them,
     and jj-kit allows none.
 - **Both release jobs install from the registry**, checked against the
@@ -138,6 +173,12 @@ verified: { by: human:jjloneman, at: 2026-11-26T23:57:25Z }
   to `main`, and the release job another whenever it runs.
   - So only the build's own dependencies can change what's built, not a tool
     that runs in `ci.yml` alone.
+- **A package the version or publish path needs but the root's `dependencies`
+  lack fails at release time**, not in a PR's CI, since no `ci.yml` job runs the
+  narrow install.
+  - A consumer whose `.changeset/config.json` loads plugins, such as a changelog
+    package, lists them there too, and sets `format: false` or adds its
+    formatter.
 - A consumer's release workflow has two jobs, as
   [Consuming the kit](../references/consuming.md) shows.
 - The root's `pnpm release` script is gone, since nothing runs it.
@@ -147,6 +188,7 @@ verified: { by: human:jjloneman, at: 2026-11-26T23:57:25Z }
 - #5, whose review raised it.
 - #23, which settled it.
 - #28, which keeps the store cache out of both release jobs.
+- #31, which narrows the privileged job's install.
 
 [^changesets-action-pack]:
     `changesets/action/pack` v2.1.2 needs no job permissions, and uploads the
@@ -155,6 +197,11 @@ verified: { by: human:jjloneman, at: 2026-11-26T23:57:25Z }
 [^changesets-action-run]:
     `runPublish` in v2.1.2 runs the publish command with `GITHUB_TOKEN` set to
     the action's token.
+
+[^changesets-action-utils]:
+    `validateChangesetsCliVersion` reads `@changesets/cli` from the root's
+    `devDependencies` or `dependencies`, and `resolveChangesetsCli` calls
+    `require.resolve("@changesets/cli/bin.js")` from the working directory.
 
 [^id-token]:
     With `id-token: write`, a job's steps get `ACTIONS_ID_TOKEN_REQUEST_URL` and

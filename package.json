@@ -6,9 +6,11 @@
   "bugs": {
     "url": "https://github.com/jjloneman/jj-kit/issues"
   },
+  "dependencies": {
+    "@changesets/cli": "3.0.3"
+  },
   "description": "🧰 My shared repo kit: lint, format, TypeScript, release and CI configs every repo inherits",
   "devDependencies": {
-    "@changesets/cli": "3.0.3",
     "@changesets/config": "4.0.1",
     "@eslint/js": "10.0.1",
     "@jjloneman/okf-tools": "0.1.0",

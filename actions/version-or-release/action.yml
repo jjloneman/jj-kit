@@ -15,9 +15,12 @@ description: >-
 # - "Allow GitHub Actions to create and approve pull requests" on, in the
 #   repo's Actions settings, when `github-token` is `GITHUB_TOKEN`;
 #
-# - a checkout, and Node 26 and pnpm with the workspace installed,
-#   `@changesets/cli` 3 or later included, usually from
-#   `jjloneman/jj-kit/actions/setup`, though a consumer may keep its own setup
+# - a checkout, and Node 26 and pnpm with `@changesets/cli` 3 or later
+#   installed in the repo root, along with every plugin
+#   `.changeset/config.json` loads and, unless its `format` is false, the
+#   formatter Changesets runs on the CHANGELOGs; usually from
+#   `jjloneman/jj-kit/actions/setup`, whose `install: root` installs the
+#   root's `dependencies` alone, though a consumer may keep its own setup
 #   step;
 #
 # - the `label` in the repo, or the step that labels the version PR fails.

@@ -210,10 +210,11 @@ overrides:
 importers:
 
   .:
-    devDependencies:
+    dependencies:
       '@changesets/cli':
         specifier: 3.0.3
         version: 3.0.3
+    devDependencies:
       '@changesets/config':
         specifier: 4.0.1
         version: 4.0.1

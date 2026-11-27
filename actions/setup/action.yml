@@ -9,7 +9,10 @@ description: >-
 #   which picks the pnpm version;
 #
 # - a `pnpm-lock.yaml` that matches the workspace, since the install is
-#   frozen.
+#   frozen;
+#
+# - with `install: root`, every package the job runs in the root's
+#   `dependencies`, since devDependencies and workspace packages are skipped.
 inputs:
   cache:
     default: "true"
@@ -17,6 +20,13 @@ inputs:
       Whether to restore and save the pnpm store cache; pass `false` in a job
       that holds write permissions or `id-token: write`, or builds what's
       published, so it never installs from a store another job saved.
+
+  install:
+    default: all
+    description: >-
+      What to install: `all`, the whole workspace, or `root`, only the
+      workspace root's `dependencies`, for a job that runs nothing else, such
+      as the one that versions or publishes; `root` needs `cache: false`.
 
   node-version:
     default: "26"
@@ -65,6 +75,35 @@ runs:
           echo "::warning title=setup::This job can request an OIDC token but restores the pnpm store cache; pass cache: false so it never installs from a store another job saved."
         fi
 
+    # Fails a misspelled value before pnpm and Node install, rather than at
+    # the install step, which checks it again.
+    #
+    # - `root` with the cache on would save a store of the root's
+    #   `dependencies` alone under the lockfile's key, which every full install
+    #   then restores and never replaces, so it needs `cache: false`.
+    - name: 🔍 Check the install input
+      env:
+        CACHE: ${{ inputs.cache }}
+        INSTALL: ${{ inputs.install }}
+      shell: bash
+      run: |
+        case "$INSTALL" in
+          all | All | ALL) ;;
+          root | Root | ROOT)
+            case "$CACHE" in
+              false | False | FALSE) ;;
+              *)
+                echo "::error title=setup::install: root needs cache: false, or it saves a partial pnpm store that full installs then restore."
+                exit 1
+                ;;
+            esac
+            ;;
+          *)
+            echo "::error title=setup::install must be all or root; leave it out to install the whole workspace."
+            exit 1
+            ;;
+        esac
+
     # The cache is an input because a store saved after another job's steps
     # ran mustn't reach a job that can push or publish, or builds what's
     # published.
@@ -91,6 +130,21 @@ runs:
         node-version: ${{ inputs.node-version }}
         package-manager-cache: false
 
+    # `root` installs the root's `dependencies` alone, for a job that can push
+    # or publish.
+    #
+    # - It never links the dev tools that job doesn't run; see
+    #   docs/decisions/unprivileged-release-build.md.
     - name: 🔗 Install dependencies
+      env:
+        INSTALL: ${{ inputs.install }}
       shell: bash
-      run: pnpm install --frozen-lockfile
+      run: |
+        case "$INSTALL" in
+          all | All | ALL) pnpm install --frozen-lockfile ;;
+          root | Root | ROOT) pnpm install --frozen-lockfile --prod --filter . ;;
+          *)
+            echo "::error title=setup::install must be all or root."
+            exit 1
+            ;;
+        esac

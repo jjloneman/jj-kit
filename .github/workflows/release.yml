@@ -80,9 +80,13 @@ jobs:
 
       # No pnpm store cache, which ci.yml saves after running every dev tool,
       # in a job that can push and publish.
+      #
+      # - Only the root's `dependencies`, which hold the Changesets CLI this
+      #   job runs, so none of the dev tools are linked.
       - uses: ./actions/setup
         with:
           cache: false
+          install: root
 
       - uses: ./actions/version-or-release
         with:

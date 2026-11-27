@@ -21,8 +21,8 @@ sources:
     resource: https://nodejs.org/api/path.html#pathmatchesglobpath-pattern
     title: Node.js, path.matchesGlob
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T02:46:12Z }
-verified: { by: human:jjloneman, at: 2026-11-27T02:46:38Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T03:53:18Z }
+verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
 ---
 
 # What the actions require of a consumer
@@ -42,6 +42,9 @@ verified: { by: human:jjloneman, at: 2026-11-27T02:46:38Z }
   on `PATH`, pnpm, and the workspace installed.
   - The kit's `setup` action is that step, run right after the checkout; a
     consumer may keep its own instead.
+  - **`version-or-release` needs only the root's `dependencies` installed**: the
+    Changesets CLI, what `.changeset/config.json` loads, and, unless `format` is
+    false, its formatter; so its job can pass `setup`'s `install: root` (#31).
   - **Rejected: installing Node and pnpm inside each action,** which would
     duplicate the consumer's setup, and the kit's own `setup` action (#6).
 - **Node 26 or later**, since the actions' scripts are TypeScript that Node runs
@@ -102,6 +105,7 @@ verified: { by: human:jjloneman, at: 2026-11-27T02:46:38Z }
 - #6, the `setup` action consumers run first.
 - #23, which added `pack-release`.
 - #27, which added the pnpm floor for Renovate PRs.
+- #31, which narrows what `version-or-release` needs installed.
 
 [^node-matches-glob]:
     `path.posix.matchesGlob` matches case-sensitively; on macOS,

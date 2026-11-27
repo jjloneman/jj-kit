@@ -16,9 +16,9 @@ sources:
   - id: setup-node-version-file
     resource: https://github.com/actions/setup-node/blob/v7.1.0/docs/advanced-usage.md
     title: actions/setup-node, advanced usage
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T23:17:48Z }
-verified: { by: human:jjloneman, at: 2026-11-26T19:29:41Z }
+verified: { by: human:jjloneman, at: 2026-11-27T23:26:20Z }
 ---
 
 # Why the kit supports Node 26 only

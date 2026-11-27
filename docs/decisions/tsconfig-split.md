@@ -22,9 +22,9 @@ sources:
   - id: ts-node-target-mapping
     resource: https://github.com/microsoft/TypeScript/wiki/Node-Target-Mapping
     title: TypeScript wiki, Node Target Mapping
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T23:17:48Z }
-verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
+verified: { by: human:jjloneman, at: 2026-11-27T23:26:20Z }
 ---
 
 # How the shared tsconfigs are split

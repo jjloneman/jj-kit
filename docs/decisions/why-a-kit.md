@@ -14,9 +14,9 @@ tags:
   - drift
   - packages
   - renovate
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T23:17:48Z }
-verified: { by: human:jjloneman, at: 2026-11-27T07:29:02Z }
+verified: { by: human:jjloneman, at: 2026-11-27T23:26:20Z }
 ---
 
 # Why a kit of packages and actions

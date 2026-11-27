@@ -20,7 +20,7 @@ sources:
     resource: https://github.com/changesets/changesets/blob/main/docs/command-line-options.md
     title: Changesets, command line options
 status: draft
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T02:05:31Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T02:09:19Z }
 verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
 ---
 
@@ -122,9 +122,9 @@ verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
         `!` excludes, dotfiles, the README and license npm always packs, the
         `main` and `bin` targets), as #5 had it, since its reviews kept finding
         corners the copy missed (#27).
-    - **The manifests and workspace file come from git at both revisions**, read
-      in one `git cat-file --batch`, while `pnpm pack` reads the working tree
-      (#27).
+    - **The manifests, workspace file and Changesets config come from git at
+      both revisions**, read in one `git cat-file --batch`, while `pnpm pack`
+      reads the working tree (#27).
       - So a symlinked manifest, or a step before this one that edits one, reads
         the same at the head as at the base.
       - **Rejected: reading the head's manifests from the working tree,** as
@@ -159,11 +159,11 @@ verified: { by: human:jjloneman, at: 2026-11-26T18:24:07Z }
     - `.changeset/` ships nothing even when `pnpm pack` lists it, since
       otherwise the empty changeset the owner adds to a Renovate branch would
       itself demand a release (#27's review).
+    - A workspace file that lists package globs makes the repo a monorepo, as
+      Changesets decides, even before a package matches them.
   - **The Changesets config needs a changeset but no release**, in a monorepo or
     a single-package repo, as a build config does, since it changes what
     releases (#27's review).
-    - A workspace file that lists package globs makes the repo a monorepo, as
-      Changesets decides, even before a package matches them.
   - The actions need `@changesets/cli` 3 or later, whose `privatePackages`
     defaults they read (see
     [What the actions require of a consumer](action-requirements.md)).

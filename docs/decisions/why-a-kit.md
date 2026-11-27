@@ -16,7 +16,7 @@ tags:
   - renovate
 status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T07:26:50Z }
-verified: { by: human:jjloneman, at: 2026-11-27T05:08:07Z }
+verified: { by: human:jjloneman, at: 2026-11-27T07:29:02Z }
 ---
 
 # Why a kit of packages and actions

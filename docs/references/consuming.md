@@ -23,7 +23,7 @@ tags:
   - version-pr
 status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T07:13:31Z }
-verified: { by: human:jjloneman, at: 2026-11-27T06:09:56Z }
+verified: { by: human:jjloneman, at: 2026-11-27T07:29:02Z }
 ---
 
 # Consuming the kit

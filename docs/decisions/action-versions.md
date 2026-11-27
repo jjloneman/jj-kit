@@ -33,7 +33,7 @@ sources:
     title: Renovate, the regex custom manager
 status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T07:13:31Z }
-verified: { by: human:jjloneman, at: 2026-11-26T22:42:26Z }
+verified: { by: human:jjloneman, at: 2026-11-27T07:29:02Z }
 ---
 
 # How the actions are versioned

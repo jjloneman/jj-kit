@@ -50,6 +50,9 @@
   - `changesets-changelog/` — `@jjloneman/kit-changesets-changelog`, the gitmoji
     changelog formatter, which jj-kit's own `.changeset/config.json` loads from
     source.
+  - `eslint-plugin/` — `@jjloneman/kit-eslint-plugin`, the kit's own ESLint
+    rules under the `jj-kit/` namespace, which jj-kit's own `eslint.config.ts`
+    loads from source.
   - `tsconfig/` — `@jjloneman/kit-tsconfig`, the shared `tsconfig` bases, JSON
     only, with no build; its tests write fixture projects to a temp folder and
     run tsc over them.
@@ -75,9 +78,8 @@
   - Renovate reads it from `main`, unversioned, so a change to it reaches every
     consumer at once; its PR takes an empty changeset.
 - `.githooks/` — the `pre-commit` and `pre-push` hooks (#11 replaces them).
-- `eslint-rules/` — the local rules, loaded by `eslint.config.ts`, and their own
-  Vitest project:
-  - `no-dotted-jsdoc-param` (#9 replaces it);
+- `eslint-rules/` — the local rules no kit package ships, registered as `local/`
+  by `eslint.config.ts`, with their own Vitest project:
   - `pinned-uses`, which #10 carries into the kit's ESLint config.
 - Root configs:
   - `eslint.config.ts` (#10) and `prettier.config.ts` (#7), each copied from
@@ -146,7 +148,7 @@
   never with a dotted `@param options.key`.
   - An editor shows a property's comment at the call site, but nothing for a
     dotted `@param`.
-  - `local/no-dotted-jsdoc-param` enforces it.
+  - `jj-kit/no-dotted-jsdoc-param`, from `kit-eslint-plugin`, enforces it.
 
   ```ts
   /**
@@ -264,6 +266,9 @@
   - `// Given` / `// When` / `// Then` comments, each followed by a hyphen and
     what that phase holds.
   - Table tests name rows with `$description`.
+  - An ESLint rule's tests are a `RuleTester` table instead, whose rows ESLint
+    names with `name` and whose `valid` and `invalid` cases carry no
+    Given/When/Then.
 
 ## ✅ Pre-commit checks
 

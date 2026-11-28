@@ -31,6 +31,11 @@ okf_version: "0.2"
   shared versions live in a pnpm catalog, packages depend on each other as
   `workspace:*`, tsdown builds them and publint plus attw check what they
   publish.
+- [How the ESLint plugin is shaped](eslint-plugin.md) - `kit-eslint-plugin`
+  registers its rules under the `jj-kit` namespace, set as `meta.namespace` too,
+  exports the plugin as its default and each rule by name, and is loaded from
+  source by jj-kit's own ESLint config; rules that only jj-kit uses stay in
+  `eslint-rules/`.
 - [How the repo and its packages are named](naming.md) - The repo is `jj-kit`,
   and each package is `@jjloneman/kit-<name>` under the owner's existing npm
   scope, so the packages sort together and Renovate can group them by prefix.
@@ -170,6 +175,7 @@ verified: { by: human:jjloneman, at: 2026-11-25T13:00:00Z }
 - `dogfooding`: jj-kit using its own packages and actions.
 - `drift`: Copies of shared config that diverge across repos.
 - `engines`: A package's `engines` field.
+- `eslint`: ESLint, its flat configs and its rules.
 - `formatting`: How formatters such as Prettier treat files.
 - `frontmatter`: A record's YAML frontmatter.
 - `git`: How the kit runs git and reads its output.
@@ -180,6 +186,7 @@ verified: { by: human:jjloneman, at: 2026-11-25T13:00:00Z }
 - `github-token`: The workflow's own `GITHUB_TOKEN`.
 - `gitmoji`: The emoji after a commit subject's colon.
 - `kit-changesets-changelog`: The `@jjloneman/kit-changesets-changelog` package.
+- `kit-eslint-plugin`: The `@jjloneman/kit-eslint-plugin` package.
 - `kit-git-hooks`: The `@jjloneman/kit-git-hooks` package.
 - `kit-tsconfig`: The `@jjloneman/kit-tsconfig` package.
 - `libraries`: Published library code and its settings.

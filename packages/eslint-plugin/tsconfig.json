@@ -1,0 +1,14 @@
+/*
+ * Typechecks this package; tsdown builds it.
+ *
+ * - `lib.json` sets it up for publishing, and `node.json` lets relative imports
+ *   name the `.ts` file: jj-kit's `eslint.config.ts` loads `src/index.ts`
+ *   directly, and tsdown rewrites the imports when it builds.
+ */
+{
+  "extends": [
+    "@jjloneman/kit-tsconfig/lib.json",
+    "@jjloneman/kit-tsconfig/node.json"
+  ],
+  "include": ["*.config.ts", "src"]
+}

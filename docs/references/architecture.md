@@ -11,6 +11,7 @@ tags:
   - dogfooding
   - git-tags
   - kit-changesets-changelog
+  - kit-eslint-plugin
   - kit-tsconfig
   - layout
   - npm
@@ -22,18 +23,19 @@ tags:
   - type-stripping
   - version-pr
   - workspace
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T23:17:48Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T08:51:57Z }
 verified: { by: human:jjloneman, at: 2026-11-27T23:26:20Z }
 ---
 
 # Architecture
 
-- **As of 2026-11-27.** The workspace, CI and release pipeline are in place;
+- **As of 2026-11-28.** The workspace, CI and release pipeline are in place;
   `kit-changesets-changelog` (#4) is the first package built, then
-  `kit-tsconfig` (#8), and `require-changeset` and `version-or-release` (#5),
-  then `setup` (#6), the first actions, with `pack-release` (#23) splitting the
-  release into an unprivileged build and a privileged publish.
+  `kit-tsconfig` (#8) and `kit-eslint-plugin` (#9), and `require-changeset` and
+  `version-or-release` (#5), then `setup` (#6), the first actions, with
+  `pack-release` (#23) splitting the release into an unprivileged build and a
+  privileged publish.
 - Each package and action issue updates this page in the same PR.
 - Why it's built this way is in the [decisions bundle](../decisions/index.md).
 
@@ -61,7 +63,9 @@ verified: { by: human:jjloneman, at: 2026-11-27T23:26:20Z }
 - `.github/`: `workflows/ci.yml`, `workflows/release.yml` and the ruleset
   protecting `main`.
 - Root configs:
-  - ESLint and Prettier, each copied from okf-tools until its package lands;
+  - ESLint and Prettier, each copied from okf-tools until its package lands; the
+    ESLint config already loads `kit-eslint-plugin` from source, and
+    `eslint-rules/` keeps the local rules no package ships;
   - TypeScript, whose root `tsconfig.json`, like every package's and action's,
     extends `kit-tsconfig`'s `lib.json` and `node.json`;
   - Vitest, which runs every package's tests as one workspace and has no kit
@@ -73,7 +77,7 @@ verified: { by: human:jjloneman, at: 2026-11-27T23:26:20Z }
 | -------------------------- | ------------------------------------------------------------------------- | ----- |
 | `kit-changesets-changelog` | A Changesets changelog formatter with each commit's gitmoji and scope     | #4    |
 | `kit-eslint-config`        | A typed `defineConfig(options)` for flat-config ESLint                    | #10   |
-| `kit-eslint-plugin`        | The kit's own ESLint rules, starting with `no-dotted-jsdoc-param`         | #9    |
+| `kit-eslint-plugin`        | The kit's own ESLint rules, such as `jj-kit/no-dotted-jsdoc-param`        | #9    |
 | `kit-git-hooks`            | The `kit-pre-commit` and `kit-pre-push` commands                          | #11   |
 | `kit-prettier-config`      | A base Prettier config, and a variant for zsh scripts                     | #7    |
 | `kit-tsconfig`             | `base.json`, `node.json`, `bundler.json` and `lib.json`, by how code runs | #8    |

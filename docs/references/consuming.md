@@ -12,6 +12,7 @@ tags:
   - ci
   - consumers
   - kit-changesets-changelog
+  - kit-tsconfig
   - moratorium
   - node
   - packages
@@ -22,15 +23,15 @@ tags:
   - setup-action
   - version-pr
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T07:13:31Z }
-verified: { by: human:jjloneman, at: 2026-11-27T07:29:02Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T23:17:48Z }
+verified: { by: human:jjloneman, at: 2026-11-27T23:26:20Z }
 ---
 
 # Consuming the kit
 
-- **As of 2026-11-26,** `kit-changesets-changelog` and the `pack-release`,
-  `require-changeset`, `setup` and `version-or-release` actions are built; no
-  other package or action is.
+- **As of 2026-11-27,** `kit-changesets-changelog`, `kit-tsconfig` and the
+  `pack-release`, `require-changeset`, `setup` and `version-or-release` actions
+  are built; no other package or action is.
 - Each section below is filled in by the PR that ships it.
 - For a reader in another repo: what to install, what to write, and what to
   delete.
@@ -128,7 +129,40 @@ verified: { by: human:jjloneman, at: 2026-11-27T07:29:02Z }
 
 ### kit-tsconfig
 
-- 🚧 Coming in #8.
+- **Install it**, with `typescript` 6 and, for `node.json` or `lib.json`,
+  `@types/node` at the oldest Node the repo's published code supports.
+- **Extend one base by how the code runs**, keeping `include`, `outDir` and
+  `rootDir` in the repo's own `tsconfig.json`, since they resolve against the
+  file that sets them:
+
+  ```json
+  {
+    "extends": "@jjloneman/kit-tsconfig/node.json",
+    "include": ["src", "*.config.ts"]
+  }
+  ```
+
+  - `node.json` for code Node runs under type stripping, `bundler.json` for
+    bundled code, and `lib.json` for a published package.
+  - **Compose two with an `extends` array**, later ones winning, such as
+    `["@jjloneman/kit-tsconfig/lib.json", "@jjloneman/kit-tsconfig/node.json"]`
+    for a package whose source Node also runs directly, as jj-kit's own configs
+    do.
+
+- **Delete every option the base already sets**, keeping only the repo's own.
+  - Relative imports under `node.json` and `lib.json` need a file extension;
+    `node.json` takes the `.ts` name, and `lib.json` alone the emitted `.js`.
+- **`node.json` and `lib.json` need `"type": "module"`** in the repo's
+  `package.json`: under `nodenext`, `verbatimModuleSyntax` rejects importing or
+  exporting a value in a CommonJS file (TS1295, TS1287).
+- **A `lib.json` package that tsdown builds sets `noEmit: true`**, unless it
+  also extends `node.json`, or a plain `tsc` typecheck writes `.js` and `.d.ts`
+  files beside its sources.
+- **A `lib.json` package that emits with tsc sets `outDir` and `rootDir`**;
+  TypeScript 6 reports TS5011 when `outDir` is set without `rootDir`.
+- **A web app on `bundler.json` adds `"dom"` to `lib`**, as `["es2025", "dom"]`.
+- **A package that supports a Node older than 26** lowers `target` and `lib`
+  from `es2025` to match.
 
 ## Actions
 

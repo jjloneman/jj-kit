@@ -15,8 +15,8 @@ tags:
   - packages
   - renovate
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T07:26:50Z }
-verified: { by: human:jjloneman, at: 2026-11-27T07:29:02Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T23:17:48Z }
+verified: { by: human:jjloneman, at: 2026-11-27T23:26:20Z }
 ---
 
 # Why a kit of packages and actions
@@ -72,10 +72,10 @@ verified: { by: human:jjloneman, at: 2026-11-27T07:29:02Z }
   as [Consuming the kit](../references/consuming.md) shows.
 - Until each package or action ships, jj-kit runs on copies from okf-tools, each
   headed with the issue that replaces it: the ESLint config and its local rule,
-  the Prettier config, the root `tsconfig.json`, the git hooks and the setup
-  action.
+  the Prettier config and the git hooks.
   - `ci.yml`'s changeset job and `release.yml` now run the kit's own
     `require-changeset` and `version-or-release` actions (#5).
+  - Every `tsconfig.json` now extends `kit-tsconfig`'s bases (#8).
 
 ## Links
 

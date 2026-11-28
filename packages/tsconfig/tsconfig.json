@@ -1,0 +1,6 @@
+// Typechecks this package's tests, with the bases it ships; nothing here is
+// built.
+{
+  "extends": ["./lib.json", "./node.json"],
+  "include": ["test"]
+}

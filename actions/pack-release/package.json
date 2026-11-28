@@ -11,6 +11,7 @@
   },
   "description": "📦 A composite GitHub Action that decides whether a release run opens the version PR or publishes, and builds and packs the release without write access.",
   "devDependencies": {
+    "@jjloneman/kit-tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

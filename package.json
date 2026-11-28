@@ -13,6 +13,7 @@
   "devDependencies": {
     "@changesets/config": "4.0.1",
     "@eslint/js": "10.0.1",
+    "@jjloneman/kit-tsconfig": "workspace:*",
     "@jjloneman/okf-tools": "0.1.0",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",

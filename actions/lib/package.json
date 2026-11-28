@@ -8,6 +8,7 @@
   },
   "description": "🧰 Code the kit's composite GitHub Actions share, imported by relative path; not an action itself.",
   "devDependencies": {
+    "@jjloneman/kit-tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

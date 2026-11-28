@@ -1,0 +1,33 @@
+/*
+ * For code a bundler builds, such as a web app; TypeScript only typechecks.
+ *
+ * - Follows the TypeScript handbook's bundler template, "Choosing Compiler
+ *   Options", checked on 2026-11-27.
+ *
+ * - No `types` are loaded, since TypeScript 6 defaults them to none; a project
+ *   that runs in Node or a test runner names its own.
+ *
+ * - A web app adds `"dom"` to `lib`, which `base.json` sets to `es2025`
+ *   alone.
+ */
+{
+  "compilerOptions": {
+    // Relative imports may name the `.ts` file, which a bundler resolves.
+    "allowImportingTsExtensions": true,
+
+    // Already TypeScript 6's default, set to match the handbook's template;
+    // turning it off is an error (TS5107) unless `ignoreDeprecations` is
+    // `"6.0"`, and stops working in 7.0.
+    "esModuleInterop": true,
+
+    "module": "esnext",
+
+    // Resolve imports the way a bundler does: `package.json` `exports`, with
+    // no file extension required.
+    "moduleResolution": "bundler",
+
+    // Typecheck only; the bundler emits the JavaScript.
+    "noEmit": true
+  },
+  "extends": "./base.json"
+}

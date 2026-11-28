@@ -14,8 +14,15 @@ import { defineConfig, globalIgnores, includeIgnoreFile } from "eslint/config";
 import path from "node:path";
 import { configs as tsConfigs } from "typescript-eslint";
 
-import { NO_DOTTED_JSDOC_PARAM } from "./eslint-rules/no-dotted-jsdoc-param";
-import { PINNED_USES } from "./eslint-rules/pinned-uses";
+import { NO_DOTTED_JSDOC_PARAM } from "./eslint-rules/no-dotted-jsdoc-param.ts";
+import { PINNED_USES } from "./eslint-rules/pinned-uses.ts";
+
+/** The `.json` files whose tools read comments, linted as JSONC. */
+const JSONC_FILES: string[] = [
+  "**/tsconfig.json",
+  ".vscode/*.json",
+  "packages/tsconfig/{base,bundler,lib,node}.json",
+];
 
 /** The repo's local rules, registered once so every block shares them. */
 const LOCAL_PLUGIN = {
@@ -237,17 +244,18 @@ const CONFIG: Linter.Config[] = defineConfig(
    * - `package.json` included: npm and pnpm read its fields by name, so their
    *   order carries no meaning.
    *
-   * - `tsconfig.json` and VS Code's `.vscode/*.json` are JSONC — their tools
-   *   read comments in them — so they get the JSONC preset, which allows them.
+   * - `tsconfig.json`, `kit-tsconfig`'s bases and VS Code's `.vscode/*.json`
+   *   are JSONC — their tools read comments in them — so they get the JSONC
+   *   preset, which allows them.
    */
   {
     extends: [jsoncPlugin.configs["flat/recommended-with-json"]],
     files: ["**/*.json"],
-    ignores: ["**/tsconfig.json", ".vscode/*.json"],
+    ignores: JSONC_FILES,
   },
   {
     extends: [jsoncPlugin.configs["flat/recommended-with-jsonc"]],
-    files: ["**/*.jsonc", "**/tsconfig.json", ".vscode/*.json"],
+    files: ["**/*.jsonc", ...JSONC_FILES],
   },
   {
     extends: [jsoncPlugin.configs["flat/prettier"]],

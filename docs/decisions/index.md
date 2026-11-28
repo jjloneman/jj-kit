@@ -21,6 +21,11 @@ okf_version: "0.2"
   workspace package under `actions/`, which Changesets versions, changelogs and
   tags as `<name>@<version>` with nothing published; consumers pin it by SHA
   with that tag in a comment, which the kit's Renovate preset keeps up to date.
+- [How the actions' own dependencies are pinned](action-pins.md) - Every
+  third-party action the kit's actions and jj-kit's workflows use is pinned by
+  full commit SHA with its exact tag in a comment, which Renovate's built-in
+  `github-actions` manager reads and updates; not by tag, which the upstream can
+  move under every consumer at once.
 - [How the monorepo is built](workspace-tooling.md) - A plain pnpm workspace
   with Changesets, and no monorepo framework such as Nx, Turborepo or Lerna;
   shared versions live in a pnpm catalog, packages depend on each other as
@@ -190,7 +195,8 @@ verified: { by: human:jjloneman, at: 2026-11-25T13:00:00Z }
 - `packages`: The kit's npm packages as a set.
 - `peer-dependencies`: A package's `peerDependencies` and their ranges.
 - `permissions`: Workflow and repo permissions.
-- `pinning`: How a consumer pins a package or action version.
+- `pinning`: How a package or action version is pinned, by a consumer or by the
+  kit itself.
 - `pnpm`: pnpm and its workspace settings.
 - `pre-commit`: The pre-commit hook.
 - `pre-push`: The pre-push hook.

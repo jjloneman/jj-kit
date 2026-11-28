@@ -20,9 +20,9 @@ sources:
   - id: node-matches-glob
     resource: https://nodejs.org/api/path.html#pathmatchesglobpath-pattern
     title: Node.js, path.matchesGlob
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T23:35:16Z }
-verified: { by: human:jjloneman, at: 2026-11-27T06:09:56Z }
+verified: { by: human:jjloneman, at: 2026-11-28T04:15:35Z }
 ---
 
 # What the actions require of a consumer

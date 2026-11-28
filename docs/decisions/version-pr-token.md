@@ -15,9 +15,9 @@ tags:
   - permissions
   - releases
   - version-pr
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T23:35:16Z }
-verified: { by: human:jjloneman, at: 2026-11-25T18:26:03Z }
+verified: { by: human:jjloneman, at: 2026-11-28T04:15:35Z }
 ---
 
 # Which token opens the version PR

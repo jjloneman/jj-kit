@@ -17,6 +17,9 @@ tags:
   - setup-action
   - supply-chain
 sources:
+  - id: gh-actions-lock
+    resource: https://github.com/github/gh-actions-lock
+    title: github/gh-actions-lock, the lockfile CLI extension
   - id: github-actions-hardening
     resource: https://docs.github.com/en/actions/reference/security/secure-use#using-third-party-actions
     title: GitHub Docs, secure use of third-party actions
@@ -26,6 +29,9 @@ sources:
   - id: github-workflow-lockfiles
     resource: https://docs.github.com/en/actions/concepts/security/workflow-dependency-lockfiles
     title: GitHub Docs, workflow dependency lockfiles
+  - id: github-workflow-syntax
+    resource: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
+    title: GitHub Docs, workflow syntax
   - id: renovate-github-actions
     resource: https://docs.renovatebot.com/modules/manager/github-actions/
     title: Renovate, the github-actions manager
@@ -33,7 +39,7 @@ sources:
     resource: https://github.com/advisories/GHSA-mrrh-fwg8-r2c3
     title: GitHub Advisory GHSA-mrrh-fwg8-r2c3, tj-actions/changed-files
 status: draft
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T03:23:58Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T03:38:27Z }
 ---
 
 # How the actions' own dependencies are pinned
@@ -86,11 +92,20 @@ generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T03:23:58Z }
       CLI extension, and covers the actions an action itself
       uses[^github-workflow-lockfiles], so `uses:` could go back to readable
       tags.
-    - It protects only the repo that adopts it: a consumer with no lockfile of
-      their own still runs whatever the kit's `action.yml` names, so the kit's
+    - It protects only the repo that adopts it, and a composite action can't
+      carry a lockfile of its own yet[^gh-actions-lock]: a consumer with no
+      lockfile still runs whatever the kit's `action.yml` names, so the kit's
       actions keep SHA pins either way.
-    - Adopting it for jj-kit's workflows is a CI change of its own, and whether
-      Renovate updates it isn't checked.
+    - It works alongside SHA pins: with GitHub's SHA-pinning policy on,
+      `gh actions-lock` leaves them in place, and Renovate regenerates the
+      lockfile whenever it bumps an action[^renovate-github-actions].
+    - It doesn't follow a `./` local action, and one that uses remote actions,
+      as each of jj-kit's workflows does through `./actions/setup`, blocks the
+      lockfile until it's moved to `$/` or ignored.
+      - `uses: $/<path>` is runner syntax that runs the action from the
+        workflow's own commit, with no checkout first[^github-workflow-syntax].
+    - Adopting it, `$/` included, is a change across the owner's repos of its
+      own, so it's tracked apart from this record.
 
 - **Two checks enforce it:**
   - the local ESLint rule `local/pinned-uses` fails a `uses:` that's neither a
@@ -161,7 +176,18 @@ generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T03:23:58Z }
 [^renovate-github-actions]:
     The manager reads a SHA-pinned action's version from a comment such as
     `# v4.0.0` and updates the SHA to the tag it names; a bare SHA pin with no
-    version comment is disabled by default.
+    version comment is disabled by default. When a repo has a
+    `.github/workflows/actions.lock`, Renovate regenerates it with
+    `gh actions-lock` whenever it updates an action.
+
+[^gh-actions-lock]:
+    The extension's README says composite actions can't carry their own lockfile
+    yet, and that reusable workflows from other repos aren't locked.
+
+[^github-workflow-syntax]:
+    A `$/` path resolves to the repo at the commit of the running workflow or
+    action, takes no `@ref`, and needs no checkout; a `./` path reads the
+    checked-out workspace.
 
 [^github-immutable-releases]:
     An immutable release's assets and git tag can't be changed after it's

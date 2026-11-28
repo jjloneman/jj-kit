@@ -13,8 +13,9 @@ sources:
   - id: ts-choosing-compiler-options
     resource: https://www.typescriptlang.org/docs/handbook/modules/guides/choosing-compiler-options.html
     title: "TypeScript handbook, Modules: Choosing Compiler Options"
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T03:52:19Z }
+verified: { by: human:jjloneman, at: 2026-11-28T04:15:44Z }
 ---
 
 # The tsconfig bases, option by option

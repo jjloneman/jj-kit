@@ -22,8 +22,9 @@ sources:
   - id: eslint-configure-plugins
     resource: https://eslint.org/docs/latest/use/configure/plugins#use-plugin-rules
     title: "ESLint docs, Configure Plugins: Use Plugin Rules"
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T08:55:15Z }
+verified: { by: human:jjloneman, at: 2026-11-28T09:02:52Z }
 ---
 
 # How the ESLint plugin is shaped

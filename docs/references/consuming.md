@@ -25,7 +25,7 @@ tags:
   - setup-action
   - version-pr
 status: draft
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T08:53:27Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T08:55:15Z }
 verified: { by: human:jjloneman, at: 2026-11-28T08:51:12Z }
 ---
 

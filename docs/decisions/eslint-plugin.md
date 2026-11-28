@@ -23,7 +23,7 @@ sources:
     resource: https://eslint.org/docs/latest/use/configure/plugins#use-plugin-rules
     title: "ESLint docs, Configure Plugins: Use Plugin Rules"
 status: draft
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T08:53:27Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T08:55:15Z }
 ---
 
 # How the ESLint plugin is shaped
@@ -114,6 +114,9 @@ generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T08:53:27Z }
   - A fence that never closes hides nothing, and a `@param` indented four spaces
     is still checked: TSDoc reports the missing fence and reads both as block
     tags.
+  - A `@param` partway through a line, after a space or a `*`, is a block tag
+    too, such as one after a single-line block's summary, so the rule reports
+    it; one glued to a word or inside an inline code span isn't.
   - **Rejected: CommonMark's rules,** with `~~~` fences, longer backtick fences,
     fences that run to the end and indented code blocks, which hide `@param`
     tags TSDoc reads.

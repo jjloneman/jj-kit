@@ -12,6 +12,7 @@ tags:
   - ci
   - consumers
   - kit-changesets-changelog
+  - kit-eslint-plugin
   - kit-prettier-config
   - kit-tsconfig
   - moratorium
@@ -24,15 +25,16 @@ tags:
   - setup-action
   - version-pr
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T08:36:25Z }
-verified: { by: human:jjloneman, at: 2026-11-28T08:51:12Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T08:55:15Z }
+verified: { by: human:jjloneman, at: 2026-11-28T09:02:52Z }
 ---
 
 # Consuming the kit
 
-- **As of 2026-11-28,** `kit-changesets-changelog`, `kit-prettier-config`,
-  `kit-tsconfig` and the `pack-release`, `require-changeset`, `setup` and
-  `version-or-release` actions are built; no other package or action is.
+- **As of 2026-11-28,** `kit-changesets-changelog`, `kit-eslint-plugin`,
+  `kit-prettier-config`, `kit-tsconfig` and the `pack-release`,
+  `require-changeset`, `setup` and `version-or-release` actions are built; no
+  other package or action is.
 - Each section below is filled in by the PR that ships it.
 - For a reader in another repo: what to install, what to write, and what to
   delete.
@@ -118,7 +120,30 @@ verified: { by: human:jjloneman, at: 2026-11-28T08:51:12Z }
 
 ### kit-eslint-plugin
 
-- 🚧 Coming in #9.
+- **Install it**, with ESLint 10.2 or later:
+
+  ```sh
+  pnpm add --save-dev --save-exact @jjloneman/kit-eslint-plugin
+  ```
+
+- **Extend its `recommended` config** for the files it should lint, until
+  `kit-eslint-config` (#10) wires it in:
+
+  ```ts
+  import kitPlugin from "@jjloneman/kit-eslint-plugin";
+  import { defineConfig } from "eslint/config";
+
+  export default defineConfig({
+    extends: [kitPlugin.configs.recommended],
+    files: ["**/*.ts"],
+  });
+  ```
+
+- **Delete** any copied `eslint-rules/no-dotted-jsdoc-param` rule and its
+  `local/` registration.
+- **Rename** any `eslint-disable` comment naming `local/no-dotted-jsdoc-param`
+  to `jj-kit/no-dotted-jsdoc-param`, since the rule ID's prefix is the plugin's
+  namespace.
 
 ### kit-git-hooks
 

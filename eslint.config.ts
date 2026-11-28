@@ -11,11 +11,13 @@ import perfectionistPlugin from "eslint-plugin-perfectionist";
 import tsdocPlugin from "eslint-plugin-tsdoc";
 import ymlPlugin from "eslint-plugin-yml";
 import { defineConfig, globalIgnores, includeIgnoreFile } from "eslint/config";
+import { createHash } from "node:crypto";
+import { globSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { configs as tsConfigs } from "typescript-eslint";
 
-import { NO_DOTTED_JSDOC_PARAM } from "./eslint-rules/no-dotted-jsdoc-param.ts";
 import { PINNED_USES } from "./eslint-rules/pinned-uses.ts";
+import kitPlugin from "./packages/eslint-plugin/src/index.ts";
 
 /** The `.json` files whose tools read comments, linted as JSONC. */
 const JSONC_FILES: string[] = [
@@ -24,10 +26,26 @@ const JSONC_FILES: string[] = [
   "packages/tsconfig/{base,bundler,lib,node}.json",
 ];
 
-/** The repo's local rules, registered once so every block shares them. */
+/*
+ * The kit's plugin is imported from source, so linting never needs the
+ * package built first, and its version names that source.
+ *
+ * - The version is rewritten on the one plugin object, rather than on a copy,
+ *   since `recommended` registers that object as `jj-kit`, and ESLint refuses
+ *   two different objects under one key.
+ */
+kitPlugin.meta.version = sourceVersion({
+  base: kitPlugin.meta.version,
+  pattern: "packages/eslint-plugin/src/**/*.ts",
+});
+
+/** The repo's local rules, which no kit package ships. */
 const LOCAL_PLUGIN = {
+  meta: {
+    name: "jj-kit-local-rules",
+    version: sourceVersion({ base: "0.0.0", pattern: "eslint-rules/*.ts" }),
+  },
   rules: {
-    "no-dotted-jsdoc-param": NO_DOTTED_JSDOC_PARAM,
     "pinned-uses": PINNED_USES,
   },
 };
@@ -58,6 +76,49 @@ function documentedOrder({
     order: [...keys, { order: { caseSensitive: false, type: "asc" } }],
     pathPattern,
   };
+}
+
+/**
+ * Builds a version for a plugin loaded from source: `base`, then a short hash
+ * of the source as SemVer build metadata.
+ *
+ * - ESLint's cache keys a plugin by its `meta` name and version, which stay
+ *   the same while the source changes, so `.eslintcache` would serve an
+ *   unchanged file's old verdict after a rule edit; the hash changes the key
+ *   whenever the source does.
+ *
+ * - Any build metadata already on `base` is dropped first, so a config that
+ *   ESLint loads twice in one process, as an editor's server may, still gets
+ *   one hash.
+ *
+ * - Test files are left out, since editing one changes no rule.
+ *
+ * @returns the version, such as `0.0.0+1a2b3c4d5e6f`.
+ */
+function sourceVersion({
+  base,
+  pattern,
+}: {
+  /** The plugin's own version, such as `0.0.0`. */
+  base: string;
+
+  /** A glob of the plugin's source files, relative to the repo root. */
+  pattern: string;
+}): string {
+  const hash = createHash("sha256")
+    .update(
+      globSync(pattern, { cwd: import.meta.dirname })
+        .filter((file) => !file.endsWith(".test.ts"))
+        .sort()
+        .map((file) =>
+          readFileSync(path.join(import.meta.dirname, file), "utf8")
+        )
+        .join("\0")
+    )
+    .digest("hex")
+    .slice(0, 12);
+
+  return `${base.replace(/\+.*$/u, "")}+${hash}`;
 }
 
 const CONFIG: Linter.Config[] = defineConfig(
@@ -95,6 +156,10 @@ const CONFIG: Linter.Config[] = defineConfig(
       tsConfigs.strictTypeChecked,
       tsConfigs.stylisticTypeChecked,
       perfectionistPlugin.configs["recommended-alphabetical"],
+
+      // The kit's own rules, such as `jj-kit/no-dotted-jsdoc-param`, which
+      // reports a dotted `@param options.key` no editor tooltip reads.
+      kitPlugin.configs.recommended,
     ],
     files: ["**/*.mts", "**/*.ts"],
     languageOptions: {
@@ -104,7 +169,6 @@ const CONFIG: Linter.Config[] = defineConfig(
       },
     },
     plugins: {
-      local: LOCAL_PLUGIN,
       tsdoc: tsdocPlugin,
     },
     rules: {
@@ -198,14 +262,6 @@ const CONFIG: Linter.Config[] = defineConfig(
       // A brace-less guard reads fine until a second statement is added to it,
       // at which point that one runs unconditionally.
       curly: ["error", "all"],
-
-      /*
-       * A dotted `@param options.key` reaches no editor tooltip.
-       *
-       * - A local rule rather than a `no-restricted-syntax` selector, because
-       *   a doc block is a comment, not an AST node a selector can reach.
-       */
-      "local/no-dotted-jsdoc-param": "error",
 
       // `Boolean(value)` over `!!value`, `Number(value)` over `+value`, and
       // `String(value)` over `"" + value`; autofixable.

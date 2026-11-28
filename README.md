@@ -60,8 +60,13 @@ repo inherits
 
 ### kit-eslint-plugin
 
-- 🚧 Coming in #9: the kit's own ESLint rules, starting with
-  `no-dotted-jsdoc-param`.
+- The kit's own ESLint rules, under the `jj-kit/` namespace, with a
+  `recommended` config that turns them all on.
+- **`jj-kit/no-dotted-jsdoc-param`** reports a TSDoc `@param options.key`, since
+  no editor tooltip reads a dotted param; the doc belongs on the property in the
+  type literal.
+- Its [README](packages/eslint-plugin/README.md) has the setup and each rule
+  with a failing and a fixed example.
 
 ### kit-prettier-config
 

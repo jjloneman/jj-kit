@@ -38,8 +38,9 @@ sources:
   - id: tj-actions-advisory
     resource: https://github.com/advisories/GHSA-mrrh-fwg8-r2c3
     title: GitHub Advisory GHSA-mrrh-fwg8-r2c3, tj-actions/changed-files
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T03:38:27Z }
+verified: { by: human:jjloneman, at: 2026-11-28T04:15:35Z }
 ---
 
 # How the actions' own dependencies are pinned

@@ -22,8 +22,9 @@ sources:
   - id: prettier-overrides
     resource: https://prettier.io/docs/configuration#configuration-overrides
     title: Prettier docs, Configuration Overrides
-status: draft
+status: stable
 generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T08:36:25Z }
+verified: { by: human:jjloneman, at: 2026-11-28T08:51:12Z }
 ---
 
 # What the shared Prettier config holds

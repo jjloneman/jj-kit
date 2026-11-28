@@ -12,6 +12,7 @@ tags:
   - ci
   - consumers
   - kit-changesets-changelog
+  - kit-prettier-config
   - kit-tsconfig
   - moratorium
   - node
@@ -23,15 +24,15 @@ tags:
   - setup-action
   - version-pr
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T23:17:48Z }
-verified: { by: human:jjloneman, at: 2026-11-27T23:26:20Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T08:36:25Z }
+verified: { by: human:jjloneman, at: 2026-11-28T08:51:12Z }
 ---
 
 # Consuming the kit
 
-- **As of 2026-11-27,** `kit-changesets-changelog`, `kit-tsconfig` and the
-  `pack-release`, `require-changeset`, `setup` and `version-or-release` actions
-  are built; no other package or action is.
+- **As of 2026-11-28,** `kit-changesets-changelog`, `kit-prettier-config`,
+  `kit-tsconfig` and the `pack-release`, `require-changeset`, `setup` and
+  `version-or-release` actions are built; no other package or action is.
 - Each section below is filled in by the PR that ships it.
 - For a reader in another repo: what to install, what to write, and what to
   delete.
@@ -125,7 +126,27 @@ verified: { by: human:jjloneman, at: 2026-11-27T23:26:20Z }
 
 ### kit-prettier-config
 
-- 🚧 Coming in #7.
+- **Install it with `prettier`**, then delete the repo's own
+  `prettier-plugin-sh` and `sh-syntax`, which it brings.
+- **Re-export it** as the repo's `prettier.config.ts`:
+
+  ```ts
+  export { default } from "@jjloneman/kit-prettier-config";
+  ```
+
+  - A repo with zsh scripts names them instead:
+    `export default createZshConfig({ files: ["bin/*"] })`, from
+    `@jjloneman/kit-prettier-config/zsh`.
+
+- **Keep the repo's own settings by spreading the base**, then adding to its
+  `OVERRIDES` and `PLUGINS` exports, since setting `overrides` or `plugins`
+  replaces the base's; its [README](../../packages/prettier-config/README.md)
+  has the example.
+  - Typical keepers: a `proseWrap` override for the repo's Markdown, and
+    language plugins such as `prettier-plugin-toml`, listed by name.
+- **Drop `prettier-plugin-packagejson`** if the repo sorts `package.json` with
+  the kit's ESLint config, or the two fight over key order.
+- **Expect a one-time diff** in a repo that used other `trailingComma` settings.
 
 ### kit-tsconfig
 

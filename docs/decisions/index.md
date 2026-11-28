@@ -44,6 +44,11 @@ okf_version: "0.2"
   with Node 26, pnpm, `@changesets/cli` 3 or later and, for a Renovate PR, pnpm
   10.26 or later and `yq` v4; they fail clearly when Node or the Changesets CLI
   is too old or missing, rather than bringing their own.
+- [What the shared Prettier config holds](prettier-config.md) -
+  `kit-prettier-config` ships the settings every copy shared, with its plugins
+  as imported modules so pnpm consumers can load them, named `OVERRIDES` and
+  `PLUGINS` exports to add to, and a `createZshConfig` variant; it leaves
+  `package.json` order to ESLint and Markdown wrap to each repo.
 - [Which token opens the version PR](version-pr-token.md) - The rolling version
   PR is opened with the workflow's own `GITHUB_TOKEN`, so its CI run needs one
   approval click per release and each repo allows GitHub Actions to create pull
@@ -181,6 +186,7 @@ verified: { by: human:jjloneman, at: 2026-11-25T13:00:00Z }
 - `gitmoji`: The emoji after a commit subject's colon.
 - `kit-changesets-changelog`: The `@jjloneman/kit-changesets-changelog` package.
 - `kit-git-hooks`: The `@jjloneman/kit-git-hooks` package.
+- `kit-prettier-config`: The `@jjloneman/kit-prettier-config` package.
 - `kit-tsconfig`: The `@jjloneman/kit-tsconfig` package.
 - `libraries`: Published library code and its settings.
 - `markdown`: Markdown files and how they're laid out.

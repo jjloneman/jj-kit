@@ -1,0 +1,15 @@
+/*
+ * Typechecks this package and its tests; tsdown builds it.
+ *
+ * - `lib.json` sets it up for publishing, and `node.json` lets relative imports
+ *   name the `.ts` file: jj-kit's root `prettier.config.ts` loads
+ *   `src/index.ts` directly under Node's type stripping, which resolves only
+ *   the real file name, and tsdown rewrites the imports when it builds.
+ */
+{
+  "extends": [
+    "@jjloneman/kit-tsconfig/lib.json",
+    "@jjloneman/kit-tsconfig/node.json"
+  ],
+  "include": ["*.config.ts", "src", "test"]
+}

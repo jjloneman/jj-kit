@@ -24,7 +24,6 @@
     "eslint-plugin-yml": "3.10.0",
     "jiti": "2.7.0",
     "prettier": "catalog:",
-    "prettier-plugin-sh": "0.20.2",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",
     "vitest": "catalog:"

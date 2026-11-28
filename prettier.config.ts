@@ -1,38 +1,19 @@
 /*
- * Copied from okf-tools until the kit ships its own Prettier config.
+ * jj-kit's Prettier config: the kit's own base, plus the Markdown wrap only
+ * this repo uses.
  *
- * - #7 replaces this file with `@jjloneman/kit-prettier-config`.
- *
- * - The Markdown override below is jj-kit's own, not okf-tools', so #7 must
- *   keep it (see docs/decisions/markdown-wrap.md).
+ * - The base is imported from `kit-prettier-config`'s source by relative
+ *   path, as `.changeset/config.json` loads the changelog formatter, so
+ *   formatting needs no build first.
  */
 import type { Config } from "prettier";
 
-const CONFIG: Config = {
-  overrides: [
-    /*
-     * The git hooks are POSIX shell scripts with no extension, so Prettier
-     * can't infer a parser from the filename.
-     *
-     * - Matched by `!(*.*)` (extensionless files only) rather than
-     *   `.githooks/*`, so a non-shell file added later keeps its own parser.
-     */
-    {
-      files: ".githooks/!(*.*)",
-      options: { parser: "sh" },
-    },
+import BASE, { OVERRIDES } from "./packages/prettier-config/src/index.ts";
 
-    /*
-     * JSONC files are hand-edited, so keep them free of the trailing commas
-     * the es5 default would add.
-     *
-     * - `tsconfig.json` is listed by name because Prettier parses it as JSONC
-     *   despite the `.json` extension.
-     */
-    {
-      files: ["*.jsonc", "tsconfig.json"],
-      options: { trailingComma: "none" },
-    },
+const CONFIG: Config = {
+  ...BASE,
+  overrides: [
+    ...OVERRIDES,
 
     /*
      * Wrap Markdown at `printWidth`, so files read well side by side in
@@ -56,8 +37,6 @@ const CONFIG: Config = {
       options: { proseWrap: "always" },
     },
   ],
-  plugins: ["prettier-plugin-sh"],
-  trailingComma: "es5",
 };
 
 export default CONFIG;

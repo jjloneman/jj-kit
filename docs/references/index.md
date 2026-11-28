@@ -11,6 +11,9 @@ okf_version: "0.2"
   package and action, pins actions by SHA with a version comment that the kit's
   Renovate preset updates, and excludes the kit from its own dependency
   moratorium.
+- [The tsconfig bases, option by option](tsconfig-options.md) - Every option
+  `kit-tsconfig`'s four bases set, in the order each file sets it, with why it's
+  there, and what each base leaves out on purpose.
 
 # About this bundle
 

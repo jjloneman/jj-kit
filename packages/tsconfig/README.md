@@ -28,6 +28,8 @@ pnpm add --save-dev --save-exact @jjloneman/kit-tsconfig
   `skipLibCheck`, with `target` and `lib` at `es2025` for Node 26.
 - **`node.json` and `lib.json` load Node's types**, since TypeScript 6 loads
   none by default; `bundler.json` loads none.
+- **Why each option is set** is in
+  [The tsconfig bases, option by option](https://github.com/jjloneman/jj-kit/blob/main/docs/references/tsconfig-options.md).
 
 ## 🔧 Use
 

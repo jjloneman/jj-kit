@@ -70,7 +70,18 @@ repo inherits
 
 ### kit-prettier-config
 
-- 🚧 Coming in #7: a base Prettier config, and a variant for zsh scripts.
+- A shared Prettier config, which jj-kit's own `prettier.config.ts` spreads:
+  - git hooks formatted as shell, and JSONC free of trailing commas;
+  - `createZshConfig({ files })`, from `./zsh`, for repos with zsh scripts.
+- Re-export it, or spread it and add to its `OVERRIDES` and `PLUGINS` for local
+  settings:
+
+  ```ts
+  export { default } from "@jjloneman/kit-prettier-config";
+  ```
+
+- Its [README](packages/prettier-config/README.md) has both usages and how to
+  add overrides.
 
 ### kit-tsconfig
 

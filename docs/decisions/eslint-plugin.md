@@ -23,7 +23,7 @@ sources:
     resource: https://eslint.org/docs/latest/use/configure/plugins#use-plugin-rules
     title: "ESLint docs, Configure Plugins: Use Plugin Rules"
 status: draft
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T08:51:57Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T08:53:27Z }
 ---
 
 # How the ESLint plugin is shaped

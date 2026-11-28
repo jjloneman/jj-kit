@@ -1,0 +1,67 @@
+{
+  "author": {
+    "name": "JJ Loneman",
+    "url": "https://github.com/jjloneman"
+  },
+  "bugs": {
+    "url": "https://github.com/jjloneman/jj-kit/issues"
+  },
+  "dependencies": {
+    "prettier-plugin-sh": "0.20.2",
+    "sh-syntax": "^0.7.0"
+  },
+  "description": "🎨 A shared Prettier config that formats git hooks and keeps JSONC free of trailing commas, plus a variant that parses named files as zsh.",
+  "devDependencies": {
+    "@arethetypeswrong/cli": "catalog:",
+    "@jjloneman/kit-tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "prettier": "catalog:",
+    "publint": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=26"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./package.json": "./package.json",
+    "./zsh": "./dist/zsh.js"
+  },
+  "files": [
+    "CHANGELOG.md",
+    "dist",
+    "src"
+  ],
+  "homepage": "https://github.com/jjloneman/jj-kit/tree/main/packages/prettier-config#readme",
+  "keywords": [
+    "prettier",
+    "prettier-config",
+    "shell",
+    "zsh"
+  ],
+  "license": "MIT",
+  "name": "@jjloneman/kit-prettier-config",
+  "peerDependencies": {
+    "prettier": "^3.6.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "directory": "packages/prettier-config",
+    "type": "git",
+    "url": "git+https://github.com/jjloneman/jj-kit.git"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "lint:package": "pnpm build && publint && attw --pack --profile esm-only",
+    "typecheck": "tsc"
+  },
+  "sideEffects": false,
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "version": "0.0.0"
+}

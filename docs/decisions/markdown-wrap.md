@@ -11,6 +11,7 @@ tags:
   - changesets
   - formatting
   - frontmatter
+  - kit-prettier-config
   - markdown
   - okf-tools
   - prettier
@@ -21,8 +22,8 @@ sources:
     resource: https://prettier.io/docs/options#prose-wrap
     title: Prettier options, prose wrap
 status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-25T19:52:40Z }
-verified: { by: human:jjloneman, at: 2026-11-25T22:06:01Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T08:36:25Z }
+verified: { by: human:jjloneman, at: 2026-11-28T08:51:12Z }
 ---
 
 # How Markdown is wrapped
@@ -78,12 +79,15 @@ verified: { by: human:jjloneman, at: 2026-11-25T22:06:01Z }
   the command means the same, since folding joins lines with a space.
 - A footnote too long for its label's line moves to the next line, indented;
   GitHub renders it the same.
-- #7's `@jjloneman/kit-prettier-config` must carry this override, or jj-kit must
-  keep it on top of the shared base, when #7 replaces the copied config.
+- **As of 2026-11-28, jj-kit keeps this override on top of the shared base**:
+  its `prettier.config.ts` spreads `kit-prettier-config` and adds it, since the
+  owner's repos wrap different Markdown, so the base leaves `proseWrap` out (#7;
+  see [What the shared Prettier config holds](prettier-config.md)).
 
 ## Links
 
 - #17, which made the change.
+- #7, which kept it on top of the shared Prettier config.
 
 [^prettier-prose-wrap]:
     Prettier's `proseWrap` defaults to `"preserve"`, which leaves Markdown line

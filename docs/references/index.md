@@ -39,6 +39,7 @@ okf_version: "0.2"
 - `git-tags`: The git tags a release makes.
 - `kit-changesets-changelog`: The `@jjloneman/kit-changesets-changelog` package.
 - `kit-eslint-plugin`: The `@jjloneman/kit-eslint-plugin` package.
+- `kit-prettier-config`: The `@jjloneman/kit-prettier-config` package.
 - `kit-tsconfig`: The `@jjloneman/kit-tsconfig` package.
 - `layout`: Where things live in the repo.
 - `moratorium`: A repo's minimum release age for new dependency versions.

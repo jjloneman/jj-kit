@@ -44,7 +44,8 @@ okf_version: "0.2"
 - `node`: Node.js versions and features the kit relies on.
 - `npm`: The npm registry and package metadata.
 - `packages`: The kit's npm packages as a set.
-- `pinning`: How a consumer pins a package or action version.
+- `pinning`: How a package or action version is pinned, by a consumer or by the
+  kit itself.
 - `pull-requests`: What every pull request must carry.
 - `releases`: Versioning and publishing.
 - `renovate`: Renovate's dependency updates.

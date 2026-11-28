@@ -40,8 +40,8 @@ sources:
   - id: pnpm-action-setup-cache
     resource: https://github.com/pnpm/action-setup/tree/v6.1.1/src
     title: pnpm/action-setup v6.1.1, its cache restore and save
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T05:35:15Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T23:35:16Z }
 verified: { by: human:jjloneman, at: 2026-11-27T06:09:56Z }
 ---
 

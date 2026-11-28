@@ -16,8 +16,8 @@ sources:
   - id: setup-node-version-file
     resource: https://github.com/actions/setup-node/blob/v7.1.0/docs/advanced-usage.md
     title: actions/setup-node, advanced usage
-status: stable
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T23:17:48Z }
+status: draft
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T04:14:45Z }
 verified: { by: human:jjloneman, at: 2026-11-27T23:26:20Z }
 ---
 

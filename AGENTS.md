@@ -67,20 +67,24 @@
   [Versioning & releases](#-versioning--releases)).
 - `.github/`:
   - `workflows/` — `ci.yml` and `release.yml`;
-  - `rulesets/main.json` — protects `main`.
+  - `rulesets/main.json` — protects `main`;
+  - `scripts/check-action-pins.sh` — checks each third-party pin's SHA against
+    its tag, run by `ci.yml`'s `🧹 Lint & format`.
 - `renovate/actions.json` — the Renovate preset that updates consumers' action
   pins, extended as `github>jjloneman/jj-kit//renovate/actions`.
   - Renovate reads it from `main`, unversioned, so a change to it reaches every
     consumer at once; its PR takes an empty changeset.
 - `.githooks/` — the `pre-commit` and `pre-push` hooks (#11 replaces them).
-- `eslint-rules/` — the local `no-dotted-jsdoc-param` rule, loaded by
-  `eslint.config.ts` (#9 replaces it).
+- `eslint-rules/` — the local rules, loaded by `eslint.config.ts`, and their own
+  Vitest project:
+  - `no-dotted-jsdoc-param` (#9 replaces it);
+  - `pinned-uses`, which #10 carries into the kit's ESLint config.
 - Root configs:
   - `eslint.config.ts` (#10) and `prettier.config.ts` (#7), each copied from
     okf-tools until the package that replaces it lands;
   - `tsconfig.json`, which covers the root's own files only;
-  - `vitest.config.ts`, one Vitest project per package and action, which no kit
-    package replaces.
+  - `vitest.config.ts`, one Vitest project per package and action, plus
+    `eslint-rules/`, which no kit package replaces.
 - `pnpm-workspace.yaml` — the workspace, the shared `catalog` of dev dependency
   versions (referenced as `catalog:`), and the
   [moratorium](#-7-day-dependency-moratorium).
@@ -320,7 +324,27 @@
     there's something to do, with no build.
 - **jj-kit uses its actions by local path** (`./actions/<name>`), so a PR's CI
   runs the actions as that PR changes them.
-- **Every action is pinned to an exact `vX.Y.Z`.**
+- **Every third-party action is pinned by full commit SHA, with its exact
+  `vX.Y.Z` tag in a comment**, as `uses: <action>@<sha> # vX.Y.Z`, in
+  `actions/*/action.yml` and in the workflows alike.
+  - Take the SHA the tag points to, peeled for an annotated tag:
+    `gh api repos/<owner>/<repo>/commits/<tag> -q .sha`.
+  - Sub-actions of one repo, such as `changesets/action/pack` and
+    `changesets/action/publish`, share one SHA and move together.
+  - A pin bump in an `action.yml` changes what that action ships, so it needs a
+    changeset releasing it.
+  - A pin bump also updates each comment or doc that describes the current pin:
+    grep the repo for the old tag, such as `v2.1.2`.
+    - Leave dated statements and record sources alone, since they name the
+      version they were checked against; re-check a record's claim before moving
+      it to the new version.
+  - **Two checks enforce it:**
+    - `local/pinned-uses` fails a `uses:` that's neither a local path, a
+      digest-pinned image nor a full SHA with its `# vX.Y.Z` on the same line;
+    - `.github/scripts/check-action-pins.sh`, in `🧹 Lint & format`, fails a SHA
+      that isn't the commit its tag names, which needs the network.
+  - See
+    [How the actions' own dependencies are pinned](docs/decisions/action-pins.md).
 - **Every job's and every named step's `name` opens with an emoji**, and each
   step of the kit's own actions is named.
 - **Every job declares its own `permissions`**, under a top-level

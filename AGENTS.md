@@ -50,6 +50,10 @@
   - `changesets-changelog/` — `@jjloneman/kit-changesets-changelog`, the gitmoji
     changelog formatter, which jj-kit's own `.changeset/config.json` loads from
     source.
+  - `prettier-config/` — `@jjloneman/kit-prettier-config`, the base Prettier
+    config and its `./zsh` variant, which jj-kit's own `prettier.config.ts`
+    loads from source; its tests format fabricated files through a scratch
+    folder's `prettier.config.ts`.
   - `tsconfig/` — `@jjloneman/kit-tsconfig`, the shared `tsconfig` bases, JSON
     only, with no build; its tests write fixture projects to a temp folder and
     run tsc over them.
@@ -59,8 +63,8 @@
     - `lib.json` brings `isolatedDeclarations`, which enforces the declared
       return types in [Code style](#-code-style); no ESLint rule does.
     - `node.json` brings `nodenext` and `.ts` import specifiers, since Node runs
-      the actions and `changesets-changelog`'s source unbuilt, and the root's
-      `.ts` configs load from source too.
+      the actions', `changesets-changelog`'s and `prettier-config`'s source
+      unbuilt, and the root's `.ts` configs load from source too.
 - `docs/decisions/` and `docs/references/` — the repo's own OKF bundles (see
   [Design decisions](#-design-decisions)).
 - `.changeset/` — pending changesets (see
@@ -80,8 +84,10 @@
   - `no-dotted-jsdoc-param` (#9 replaces it);
   - `pinned-uses`, which #10 carries into the kit's ESLint config.
 - Root configs:
-  - `eslint.config.ts` (#10) and `prettier.config.ts` (#7), each copied from
-    okf-tools until the package that replaces it lands;
+  - `eslint.config.ts`, copied from okf-tools until #10 replaces it;
+  - `prettier.config.ts`, which spreads `kit-prettier-config`'s base from its
+    `src/` by relative path, so formatting needs no build, and adds jj-kit's own
+    Markdown wrap;
   - `tsconfig.json`, which covers the root's own files only;
   - `vitest.config.ts`, one Vitest project per package and action, plus
     `eslint-rules/`, which no kit package replaces.
@@ -374,6 +380,10 @@
   don't add one.
 - **Versions are pinned exactly** (`saveExact: true`).
   - A dev dependency more than one package uses lives in the `catalog`.
+  - **Except a published package's runtime dependency that another of its
+    dependencies also requires**, such as `kit-prettier-config`'s `sh-syntax`:
+    it takes that dependency's own range, so a consumer installs one copy (see
+    [What the shared Prettier config holds](docs/decisions/prettier-config.md)).
 - **TypeScript stays on 6.0.x** while `typescript-eslint` peers on
   `typescript <6.1.0`.
 - **`typescript-eslint` moves together with `@typescript-eslint/utils`** in the

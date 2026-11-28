@@ -1,5 +1,13 @@
 # version-or-release
 
+## 0.2.1
+
+### Patch Changes
+
+- ☁️ **actions:** Pin each third-party action it runs by full commit SHA, with its tag in a comment, so a SHA pin of this action also freezes the steps it runs. (b86df46)
+- ☁️ **release:** Fail first, naming `install: root` and the root's `dependencies`, when `@changesets/cli` doesn't resolve from the repo root. (9e6e84a)
+- ⚡️ **release:** Say what the release job must install: the Changesets CLI at the root, its config's plugins and, unless `format` is false, its formatter. (9a36107)
+
 ## 0.2.0
 
 ### Minor Changes

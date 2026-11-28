@@ -20,11 +20,20 @@ sources:
   - id: github-actions-hardening
     resource: https://docs.github.com/en/actions/reference/security/secure-use#using-third-party-actions
     title: GitHub Docs, secure use of third-party actions
+  - id: github-immutable-releases
+    resource: https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/immutable-releases
+    title: GitHub Docs, immutable releases
+  - id: github-workflow-lockfiles
+    resource: https://docs.github.com/en/actions/concepts/security/workflow-dependency-lockfiles
+    title: GitHub Docs, workflow dependency lockfiles
   - id: renovate-github-actions
     resource: https://docs.renovatebot.com/modules/manager/github-actions/
     title: Renovate, the github-actions manager
+  - id: tj-actions-advisory
+    resource: https://github.com/advisories/GHSA-mrrh-fwg8-r2c3
+    title: GitHub Advisory GHSA-mrrh-fwg8-r2c3, tj-actions/changed-files
 status: draft
-generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T23:33:49Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-11-28T03:23:58Z }
 ---
 
 # How the actions' own dependencies are pinned
@@ -34,6 +43,13 @@ generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T23:33:49Z }
   own `uses:` steps resolve when it runs.
 - With those steps pinned by tag, a moved or compromised upstream tag reaches
   every consumer at once, whatever the consumer pinned.
+- **A tag in `uses:` is a git ref, not a version:** anyone who can push to the
+  action's repo can point it at other code, and every workflow pinned to it runs
+  that code with no change of its own.
+  - In March 2025, attackers moved several of `tj-actions/changed-files`'
+    version tags to a commit that printed the runner's secrets into the workflow
+    logs[^tj-actions-advisory].
+- **A full commit SHA is the only `uses:` ref that can't be moved.**
 
 ## Decision
 
@@ -49,9 +65,32 @@ generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T23:33:49Z }
     as `pnpm/action-setup`'s and `changesets/action`'s.
   - **Rejected: pinning by tag**, such as `@v7.1.0`, which the upstream can move
     to any commit[^github-actions-hardening].
+  - **The comment is a convention, not something GitHub reads:** a SHA says
+    nothing about which release it is, so the comment carries the version for
+    reviewers and for Renovate, and only `check-action-pins.sh` checks that the
+    two agree.
+  - **Rejected: pinning by tag only where the release is immutable.**
+    - An immutable release's tag can't be moved or
+      deleted[^github-immutable-releases], but the action's own repo opts in,
+      and only for releases after it does.
+    - As of 2026-11-28, three of the five pinned releases are immutable, per the
+      releases API's `immutable` field: `setup-node` v7.1.0, `pnpm/action-setup`
+      v6.1.1 and `changesets/action` v2.1.2; `checkout` v7.0.1 and
+      `upload-artifact` v7.0.2 aren't.
+    - Nothing in `uses:` shows or enforces it, so a tag pin would need a list of
+      trusted actions, kept by hand, and would lose its protection silently if
+      an action stopped opting in.
   - **Rejected: a workflow lockfile, for now**, which the same docs recommend
-    over SHA pins for a repo that can adopt one; whether it would also freeze a
-    composite action's own steps for its consumers isn't checked.
+    over SHA pins for a repo that can adopt one.
+    - It's `.github/workflows/actions.lock`, written by the `gh actions-lock`
+      CLI extension, and covers the actions an action itself
+      uses[^github-workflow-lockfiles], so `uses:` could go back to readable
+      tags.
+    - It protects only the repo that adopts it: a consumer with no lockfile of
+      their own still runs whatever the kit's `action.yml` names, so the kit's
+      actions keep SHA pins either way.
+    - Adopting it for jj-kit's workflows is a CI change of its own, and whether
+      Renovate updates it isn't checked.
 
 - **Two checks enforce it:**
   - the local ESLint rule `local/pinned-uses` fails a `uses:` that's neither a
@@ -123,3 +162,18 @@ generated: { by: claude-code/claude-opus-5-5, at: 2026-11-27T23:33:49Z }
     The manager reads a SHA-pinned action's version from a comment such as
     `# v4.0.0` and updates the SHA to the tag it names; a bare SHA pin with no
     version comment is disabled by default.
+
+[^github-immutable-releases]:
+    An immutable release's assets and git tag can't be changed after it's
+    published; a repo or organization admin enables it, and it applies only to
+    later releases.
+
+[^github-workflow-lockfiles]:
+    The lockfile records the resolved commit of each action a workflow uses,
+    transitive dependencies included, and the docs say it supersedes SHA pinning
+    for repos that adopt it.
+
+[^tj-actions-advisory]:
+    Between March 14 and 15, 2025, version tags were retroactively pointed at a
+    malicious commit that dumped secrets from the runner's memory into the logs;
+    the advisory counts over 23,000 affected repos.
